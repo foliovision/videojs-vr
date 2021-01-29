@@ -22,7 +22,7 @@ const defaults = {
   forceCardboard: false,
   omnitoneOptions: {},
   projection: 'AUTO',
-  sphereDetail: 32
+  sphereDetail: 128 // increasing number of polygons - was 32 originally
 };
 
 const errors = {
