@@ -223,16 +223,18 @@ class VR extends Plugin {
       this.movieScreen.rotation.y = -Math.PI;
 
       this.scene.add(this.movieScreen);
-    } else if (projection === '180') {
+    } else if (projection === '180' || projection === '180_LR' || projection === '180_MONO') {
       let geometry = new THREE.SphereGeometry(256, 32, 32, Math.PI, Math.PI);
 
       // Left eye view
       geometry.scale(-1, 1, 1);
       let uvs = geometry.faceVertexUvs[0];
 
-      for (let i = 0; i < uvs.length; i++) {
-        for (let j = 0; j < 3; j++) {
-          uvs[i][j].x *= 0.5;
+      if (projection !== '180_MONO') {
+        for (let i = 0; i < uvs.length; i++) {
+          for (let j = 0; j < 3; j++) {
+            uvs[i][j].x *= 0.5;
+          }
         }
       }
 
@@ -402,77 +404,74 @@ void main() {
       }
     } else if (projection === 'FISHEYE') {
 
-        this.movieGeometry = new SphereGeometry(
-          256,         // radius - sphere´s radius
-          48,          // widthSegments - number of horizontal segments
-          48,          // heightSegments - number of vertical segments
-          0,           // phiStart - specify horizontal starting angle
-          2 * Math.PI, // phiLength - specify horizontal sweep angle size
-          0,           // thetaStart - specify vercial starting angle
-          Math.PI      // thetaLength - specify vertical sweep angle
-        );
-        
-        this.movieMaterial = new MeshBasicMaterial({
-          map: this.videoTexture,
-          overdraw: true,
-          side: BackSide
-        });
+      this.movieGeometry = new SphereGeometry(
+        256, // radius - sphere´s radius
+        48, // widthSegments - number of horizontal segments
+        48, // heightSegments - number of vertical segments
+        0, // phiStart - specify horizontal starting angle
+        2 * Math.PI, // phiLength - specify horizontal sweep angle size
+        0, // thetaStart - specify vercial starting angle
+        Math.PI // thetaLength - specify vertical sweep angle
+      );
 
-        for (var i = 0; i < this.movieGeometry.faceVertexUvs[0].length; i++) {
-           var uvs = this.movieGeometry.faceVertexUvs[0][i];
-           var face = this.movieGeometry.faces[i];
+      this.movieMaterial = new MeshBasicMaterial({
+        map: this.videoTexture,
+        overdraw: true,
+        side: BackSide
+      });
 
-           for (var j = 0; j < 3; j++) {
-               var x = face.vertexNormals[j].x;
-               var y = face.vertexNormals[j].y;
-               var z = face.vertexNormals[j].z;
+      for (let i = 0; i < this.movieGeometry.faceVertexUvs[0].length; i++) {
+        const uvs = this.movieGeometry.faceVertexUvs[0][i];
+        const face = this.movieGeometry.faces[i];
 
-               // Hemispherical fish-eye:
-               
-               // uvs[j].x = (x + 1) / 2;
-               // uvs[j].y = (z + 1) / 2;
-              
-               // Angular fish-eyes:
-               
-               var k = 0.0;                          // Fish-eye factor
-               // Equidistant:   k = 0
-               // Stereographic: k = 0.5
-               // Orthographic:  k = -1.0
-               // Equisolid:     k = -0.5
-               // Rectilinear:   k = 1.0
-               var theta_spherical = Math.acos(z); // Spherical angle
-               var rho             = 0;            // Radius
+        for (let j = 0; j < 3; j++) {
+          const x = face.vertexNormals[j].x;
+          const y = face.vertexNormals[j].y;
+          const z = face.vertexNormals[j].z;
 
-               if (k >= -1 && k < 0) {
-                   rho = (1 / k) * Math.sin(k * theta_spherical);
-               }
-               else if (k == 0) {
-                   rho = theta_spherical;
-               }
-               else if (k > 0 && k <= 1) {
-                   rho = (1 / k) * Math.tan(k * theta_spherical);
-               }
-               else{
-                   console.error('Illegal fish-eye factor!')
-               }
+          // Hemispherical fish-eye:
 
-               rho = rho / Math.PI;               // Interval correction
-               var theta_polar = Math.atan2(y,x); // Polar angle
+          // uvs[j].x = (x + 1) / 2;
+          // uvs[j].y = (z + 1) / 2;
 
-               // Convert to Cartesian coordinates
+          // Angular fish-eyes:
 
-               uvs[j].x = (rho * Math.cos(theta_polar)) + 0.5;
-               uvs[j].y = (rho * Math.sin(theta_polar)) + 0.5;
-            }
+          const k = 0.0; // Fish-eye factor
+          // Equidistant:   k = 0
+          // Stereographic: k = 0.5
+          // Orthographic:  k = -1.0
+          // Equisolid:     k = -0.5
+          // Rectilinear:   k = 1.0
+          const theta_spherical = Math.acos(z); // Spherical angle
+          let rho = 0; // Radius
+
+          if (k >= -1 && k < 0) {
+            rho = (1 / k) * Math.sin(k * theta_spherical);
+          } else if (k == 0) {
+            rho = theta_spherical;
+          } else if (k > 0 && k <= 1) {
+            rho = (1 / k) * Math.tan(k * theta_spherical);
+          } else {
+            console.error('Illegal fish-eye factor!');
+          }
+
+          rho = rho / Math.PI; // Interval correction
+          const theta_polar = Math.atan2(y, x); // Polar angle
+
+          // Convert to Cartesian coordinates
+
+          uvs[j].x = (rho * Math.cos(theta_polar)) + 0.5;
+          uvs[j].y = (rho * Math.sin(theta_polar)) + 0.5;
         }
-        
-        // this.movieGeometry.rotateX(-Math.PI / 2); // Floor mount
-        // this.movieGeometry.rotateX(Math.PI / 2);  // Ceiling mount
-        this.movieGeometry.rotateY(Math.PI);   // Wall mount
-        this.movieGeometry.uvsNeedUpdate = true;
-        this.movieScreen = new Mesh(this.movieGeometry, this.movieMaterial);
-        this.scene.add(this.movieScreen);
-        this.scene.background = new Color(0x444444);
+      }
+
+      // this.movieGeometry.rotateX(-Math.PI / 2); // Floor mount
+      // this.movieGeometry.rotateX(Math.PI / 2);  // Ceiling mount
+      this.movieGeometry.rotateY(Math.PI); // Wall mount
+      this.movieGeometry.uvsNeedUpdate = true;
+      this.movieScreen = new Mesh(this.movieGeometry, this.movieMaterial);
+      this.scene.add(this.movieScreen);
+      this.scene.background = new Color(0x444444);
     }
 
     this.currentProjection_ = projection;
@@ -664,7 +663,7 @@ void main() {
     // Store vector representing the direction in which the camera is looking, in world space.
     this.cameraVector = new THREE.Vector3();
 
-    if (this.currentProjection_ === '360_LR' || this.currentProjection_ === '360_TB' || this.currentProjection_ === '180' || this.currentProjection_ === 'EAC_LR') {
+    if (this.currentProjection_ === '360_LR' || this.currentProjection_ === '360_TB' || this.currentProjection_ === '180' || this.currentProjection_ === '180_LR' || this.currentProjection_ === '180_MONO' || this.currentProjection_ === 'EAC_LR') {
       // Render left eye when not in VR mode
       this.camera.layers.enable(1);
     }
@@ -770,7 +769,7 @@ void main() {
             camera: this.camera,
             canvas: this.renderedCanvas,
             // check if its a half sphere view projection
-            halfView: this.currentProjection_ === '180',
+            halfView: this.currentProjection_.indexOf('180') === 0,
             orientation: videojs.browser.IS_IOS || videojs.browser.IS_ANDROID || false
           };
 

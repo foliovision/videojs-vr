@@ -40,7 +40,9 @@ export const validProjections = [
   'Cube',
   'equirectangular',
   '180',
-  'FISHEYE'
+  'FISHEYE',
+  '180_LR',
+  '180_MONO'
 ];
 
 export const getInternalProjectionName = function(projection) {
