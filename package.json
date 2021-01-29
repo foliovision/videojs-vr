@@ -86,8 +86,8 @@
   },
   "devDependencies": {
     "@videojs/generator-helpers": "~1.2.0",
-    "conventional-changelog-cli": "^2.0.28",
-    "conventional-changelog-videojs": "^3.0.0",
+    "conventional-changelog-cli": "^2.1.1",
+    "conventional-changelog-videojs": "^3.0.1",
     "jsdoc": "BrandonOCasey/jsdoc#feat/plugin-from-cli",
     "karma": "^4.0.0",
     "lint-staged": "^9.4.3",
