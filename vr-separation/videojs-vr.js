@@ -51854,14 +51854,19 @@
         var _this;
 
         _this = _videojs$EventTarget.call(this) || this;
+        _this = this;
         _this.player = player;
         _this.canvas = canvas;
         assertThisInitialized(_this);
-        // TODO: make sure this works, as these onXY events seem to already be inited
+        // TODO: make sure these work
         //_this.onMoveEnd = videojs.bind(assertThisInitialized(_this), _this.onMoveEnd);
+        _this.onMoveEnd = _this.onMoveEnd.bind( _this );
         //_this.onMoveStart = videojs.bind(assertThisInitialized(_this), _this.onMoveStart);
+        _this.onMoveStart = _this.onMoveStart.bind( _this );
         //_this.onMove = videojs.bind(assertThisInitialized(_this), _this.onMove);
+        _this.onMove = _this.onMove.bind( _this );
         //_this.onControlBarMove = videojs.bind(assertThisInitialized(_this), _this.onControlBarMove);
+        _this.onControlBarMove = _this.onControlBarMove.bind( _this );
 
         // TODO: port this to flowplayer - see comments for the function below
         /*
