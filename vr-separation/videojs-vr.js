@@ -51858,14 +51858,9 @@
         _this.player = player;
         _this.canvas = canvas;
         assertThisInitialized(_this);
-        // TODO: make sure these work
-        //_this.onMoveEnd = videojs.bind(assertThisInitialized(_this), _this.onMoveEnd);
         _this.onMoveEnd = _this.onMoveEnd.bind( _this );
-        //_this.onMoveStart = videojs.bind(assertThisInitialized(_this), _this.onMoveStart);
         _this.onMoveStart = _this.onMoveStart.bind( _this );
-        //_this.onMove = videojs.bind(assertThisInitialized(_this), _this.onMove);
         _this.onMove = _this.onMove.bind( _this );
-        //_this.onControlBarMove = videojs.bind(assertThisInitialized(_this), _this.onControlBarMove);
         _this.onControlBarMove = _this.onControlBarMove.bind( _this );
 
         // TODO: port this to flowplayer - see comments for the function below
@@ -52083,6 +52078,227 @@
     return result;
   }
 
+  var USER_AGENT = window$1.navigator && window$1.navigator.userAgent || '';
+  var webkitVersionMap = /AppleWebKit\/([\d.]+)/i.exec(USER_AGENT);
+  var appleWebkitVersion = webkitVersionMap ? parseFloat(webkitVersionMap.pop()) : null;
+  /**
+   * Whether or not this device is an iPod.
+   *
+   * @static
+   * @const
+   * @type {Boolean}
+   */
+
+  var IS_IPOD = /iPod/i.test(USER_AGENT);
+  /**
+   * The detected iOS version - or `null`.
+   *
+   * @static
+   * @const
+   * @type {string|null}
+   */
+
+  var IOS_VERSION = function () {
+    var match = USER_AGENT.match(/OS (\d+)_/i);
+
+    if (match && match[1]) {
+      return match[1];
+    }
+
+    return null;
+  }();
+  /**
+   * Whether or not this is an Android device.
+   *
+   * @static
+   * @const
+   * @type {Boolean}
+   */
+
+  var IS_ANDROID = /Android/i.test(USER_AGENT);
+  /**
+   * The detected Android version - or `null`.
+   *
+   * @static
+   * @const
+   * @type {number|string|null}
+   */
+
+  var ANDROID_VERSION = function () {
+    // This matches Android Major.Minor.Patch versions
+    // ANDROID_VERSION is Major.Minor as a Number, if Minor isn't available, then only Major is returned
+    var match = USER_AGENT.match(/Android (\d+)(?:\.(\d+))?(?:\.(\d+))*/i);
+
+    if (!match) {
+      return null;
+    }
+
+    var major = match[1] && parseFloat(match[1]);
+    var minor = match[2] && parseFloat(match[2]);
+
+    if (major && minor) {
+      return parseFloat(match[1] + '.' + match[2]);
+    } else if (major) {
+      return major;
+    }
+
+    return null;
+  }();
+  /**
+   * Whether or not this is a native Android browser.
+   *
+   * @static
+   * @const
+   * @type {Boolean}
+   */
+
+  var IS_NATIVE_ANDROID = IS_ANDROID && ANDROID_VERSION < 5 && appleWebkitVersion < 537;
+  /**
+   * Whether or not this is Mozilla Firefox.
+   *
+   * @static
+   * @const
+   * @type {Boolean}
+   */
+
+  var IS_FIREFOX = /Firefox/i.test(USER_AGENT);
+  /**
+   * Whether or not this is Microsoft Edge.
+   *
+   * @static
+   * @const
+   * @type {Boolean}
+   */
+
+  var IS_EDGE = /Edge/i.test(USER_AGENT);
+  /**
+   * Whether or not this is Google Chrome.
+   *
+   * This will also be `true` for Chrome on iOS, which will have different support
+   * as it is actually Safari under the hood.
+   *
+   * @static
+   * @const
+   * @type {Boolean}
+   */
+
+  var IS_CHROME = !IS_EDGE && (/Chrome/i.test(USER_AGENT) || /CriOS/i.test(USER_AGENT));
+  /**
+   * The detected Google Chrome version - or `null`.
+   *
+   * @static
+   * @const
+   * @type {number|null}
+   */
+
+  var CHROME_VERSION = function () {
+    var match = USER_AGENT.match(/(Chrome|CriOS)\/(\d+)/);
+
+    if (match && match[2]) {
+      return parseFloat(match[2]);
+    }
+
+    return null;
+  }();
+  /**
+   * The detected Internet Explorer version - or `null`.
+   *
+   * @static
+   * @const
+   * @type {number|null}
+   */
+
+  var IE_VERSION = function () {
+    var result = /MSIE\s(\d+)\.\d/.exec(USER_AGENT);
+    var version = result && parseFloat(result[1]);
+
+    if (!version && /Trident\/7.0/i.test(USER_AGENT) && /rv:11.0/.test(USER_AGENT)) {
+      // IE 11 has a different user agent string than other IE versions
+      version = 11.0;
+    }
+
+    return version;
+  }();
+  /**
+   * Whether or not this is desktop Safari.
+   *
+   * @static
+   * @const
+   * @type {Boolean}
+   */
+
+  var IS_SAFARI = /Safari/i.test(USER_AGENT) && !IS_CHROME && !IS_ANDROID && !IS_EDGE;
+  /**
+   * Whether or not this is a Windows machine.
+   *
+   * @static
+   * @const
+   * @type {Boolean}
+   */
+
+  var IS_WINDOWS = /Windows/i.test(USER_AGENT);
+  /**
+   * Whether or not this device is touch-enabled.
+   *
+   * @static
+   * @const
+   * @type {Boolean}
+   */
+
+  /**
+   * Whether the current DOM interface appears to be real (i.e. not simulated).
+   *
+   * @return {boolean}
+   *         Will be `true` if the DOM appears to be real, `false` otherwise.
+   */
+
+
+  function isReal() {
+    // Both document and window will never be undefined thanks to `global`.
+    return document === window$1.document;
+  }
+
+  var TOUCH_ENABLED = isReal() && ('ontouchstart' in window$1 || window$1.navigator.maxTouchPoints || window$1.DocumentTouch && window$1.document instanceof window$1.DocumentTouch);
+  /**
+   * Whether or not this device is an iPad.
+   *
+   * @static
+   * @const
+   * @type {Boolean}
+   */
+
+  var IS_IPAD = /iPad/i.test(USER_AGENT) || IS_SAFARI && TOUCH_ENABLED && !/iPhone/i.test(USER_AGENT);
+  /**
+   * Whether or not this device is an iPhone.
+   *
+   * @static
+   * @const
+   * @type {Boolean}
+   */
+    // The Facebook app's UIWebView identifies as both an iPhone and iPad, so
+    // to identify iPhones, we need to exclude iPads.
+    // http://artsy.github.io/blog/2012/10/18/the-perils-of-ios-user-agent-sniffing/
+
+  var IS_IPHONE = /iPhone/i.test(USER_AGENT) && !IS_IPAD;
+  /**
+   * Whether or not this is an iOS device.
+   *
+   * @static
+   * @const
+   * @type {Boolean}
+   */
+
+  var IS_IOS = IS_IPHONE || IS_IPAD || IS_IPOD;
+  /**
+   * Whether or not this is any flavor of Safari - including iOS.
+   *
+   * @static
+   * @const
+   * @type {Boolean}
+   */
+
+  var IS_ANY_SAFARI = (IS_SAFARI || IS_IOS) && !IS_CHROME;
+
   /**
    * This class manages ambisonic decoding and binaural rendering via Omnitone library.
    */
@@ -52103,42 +52319,6 @@
        */
       function OmnitoneController(audioContext, omnitone, video, options) {
         var _this;
-
-        var USER_AGENT = window.navigator && window.navigator.userAgent || '';
-
-        /**
-         * Whether or not this is Microsoft Edge.
-         *
-         * @static
-         * @const
-         * @type {Boolean}
-         */
-        var IS_EDGE = /Edge/i.test(USER_AGENT);
-
-        /**
-         * Whether or not this is Google Chrome.
-         *
-         * This will also be `true` for Chrome on iOS, which will have different support
-         * as it is actually Safari under the hood.
-         *
-         * @static
-         * @const
-         * @type {Boolean}
-         */
-        var IS_CHROME = !IS_EDGE && (/Chrome/i.test(USER_AGENT) || /CriOS/i.test(USER_AGENT));
-
-        /**
-         * Whether or not this is an Android device.
-         *
-         * @static
-         * @const
-         * @type {Boolean}
-         */
-
-        var IS_ANDROID = /Android/i.test(USER_AGENT);
-
-        var IS_SAFARI = /Safari/i.test(USER_AGENT) && !IS_CHROME && !IS_ANDROID && !IS_EDGE;
-
 
         _this = _videojs$EventTarget.call(this) || this;
         var settings = mergeOptions({
@@ -52202,21 +52382,19 @@
       return OmnitoneController;
     }(EventTarget);
 
-  var Button = videojs.getComponent('Button');
-
   var CardboardButton =
     /*#__PURE__*/
-    function (_Button) {
-      inheritsLoose(CardboardButton, _Button);
-
-      function CardboardButton(player, options) {
+    function () {
+      function CardboardButton(player) {
         var _this;
 
-        _this = _Button.call(this, player, options) || this;
-        _this.handleVrDisplayActivate_ = videojs.bind(assertThisInitialized(_this), _this.handleVrDisplayActivate_);
-        _this.handleVrDisplayDeactivate_ = videojs.bind(assertThisInitialized(_this), _this.handleVrDisplayDeactivate_);
-        _this.handleVrDisplayPresentChange_ = videojs.bind(assertThisInitialized(_this), _this.handleVrDisplayPresentChange_);
-        _this.handleOrientationChange_ = videojs.bind(assertThisInitialized(_this), _this.handleOrientationChange_);
+        _this = this;
+        assertThisInitialized(_this);
+        _this.player_ = player;
+        _this.handleVrDisplayActivate_ = _this.handleVrDisplayActivate_.bind( _this );
+        _this.handleVrDisplayDeactivate_ = _this.handleVrDisplayDeactivate_.bind( _this );
+        _this.handleVrDisplayPresentChange_ = _this.handleVrDisplayPresentChange_.bind( _this );
+        _this.handleOrientationChange_ = _this.handleOrientationChange_.bind( _this )
         window$1.addEventListener('orientationchange', _this.handleOrientationChange_);
         window$1.addEventListener('vrdisplayactivate', _this.handleVrDisplayActivate_);
         window$1.addEventListener('vrdisplaydeactivate', _this.handleVrDisplayDeactivate_); // vrdisplaypresentchange does not fire activate or deactivate
@@ -52228,7 +52406,8 @@
         // android as it breaks the controls, and makes it impossible
         // to exit cardboard mode
 
-        if (videojs.browser.IS_ANDROID) {
+        // TODO: convert for flowplayer
+        /*if (IS_ANDROID) {
           _this.on(player, 'fullscreenchange', function () {
             if (player.isFullscreen()) {
               _this.hide();
@@ -52236,46 +52415,45 @@
               _this.show();
             }
           });
-        }
+        }*/
 
         return _this;
       }
 
       var _proto = CardboardButton.prototype;
 
-      _proto.buildCSSClass = function buildCSSClass() {
-        return "vjs-button-vr " + _Button.prototype.buildCSSClass.call(this);
-      };
-
       _proto.handleVrDisplayPresentChange_ = function handleVrDisplayPresentChange_() {
+        /*// TODO: convert for flowplayer
         if (!this.player_.vr().vrDisplay.isPresenting && this.active_) {
           this.handleVrDisplayDeactivate_();
         }
 
         if (this.player_.vr().vrDisplay.isPresenting && !this.active_) {
           this.handleVrDisplayActivate_();
-        }
+        }*/
       };
 
       _proto.handleOrientationChange_ = function handleOrientationChange_() {
-        if (this.active_ && videojs.browser.IS_IOS) {
+        if (this.active_ && IS_IOS) {
           this.changeSize_();
         }
       };
 
       _proto.changeSize_ = function changeSize_() {
-        this.player_.width(window$1.innerWidth);
-        this.player_.height(window$1.innerHeight);
+        // TODO: convert to flowplayer
+        /*this.player_.width(window$1.innerWidth);
+        this.player_.height(window$1.innerHeight);*/
         window$1.dispatchEvent(new window$1.Event('resize'));
       };
 
       _proto.handleVrDisplayActivate_ = function handleVrDisplayActivate_() {
         // we mimic fullscreen on IOS
-        if (videojs.browser.IS_IOS) {
-          this.oldWidth_ = this.player_.currentWidth();
+        if (IS_IOS) {
+          // TODO: convert for flowplayer
+          /*this.oldWidth_ = this.player_.currentWidth();
           this.oldHeight_ = this.player_.currentHeight();
           this.player_.enterFullWindow();
-          this.changeSize_();
+          this.changeSize_();*/
         }
 
         this.active_ = true;
@@ -52283,8 +52461,9 @@
 
       _proto.handleVrDisplayDeactivate_ = function handleVrDisplayDeactivate_() {
         // un-mimic fullscreen on iOS
-        if (videojs.browser.IS_IOS) {
-          if (this.oldWidth_) {
+        if (IS_IOS) {
+          // TODO: convert for flowplayer
+          /*if (this.oldWidth_) {
             this.player_.width(this.oldWidth_);
           }
 
@@ -52292,7 +52471,7 @@
             this.player_.height(this.oldHeight_);
           }
 
-          this.player_.exitFullWindow();
+          this.player_.exitFullWindow();*/
         }
 
         this.active_ = false;
@@ -52305,7 +52484,7 @@
           // This starts playback mode when the cardboard button
           // is clicked on Andriod. We need to do this as the controls
           // disappear
-          if (!this.player_.hasStarted() && videojs.browser.IS_ANDROID) {
+          if (!this.player_.playing && IS_ANDROID) {
             this.player_.play();
           }
 
@@ -52316,7 +52495,8 @@
       };
 
       _proto.dispose = function dispose() {
-        _Button.prototype.dispose.call(this);
+        // TODO: dispose of cardboard button in flowplayer
+        //_Button.prototype.dispose.call(this);
 
         window$1.removeEventListener('vrdisplayactivate', this.handleVrDisplayActivate_);
         window$1.removeEventListener('vrdisplaydeactivate', this.handleVrDisplayDeactivate_);
@@ -52324,14 +52504,15 @@
       };
 
       return CardboardButton;
-    }(Button);
+    }();
 
-  videojs.registerComponent('CardboardButton', CardboardButton);
+    // TODO: add cardboard and big play buttons to flowplayer
+  /*videojs.registerComponent('CardboardButton', CardboardButton);
 
   var BigPlayButton = videojs.getComponent('BigPlayButton');
 
   var BigVrPlayButton =
-    /*#__PURE__*/
+    /!*#__PURE__*!/
     function (_BigPlayButton) {
       inheritsLoose(BigVrPlayButton, _BigPlayButton);
 
@@ -52348,7 +52529,7 @@
       return BigVrPlayButton;
     }(BigPlayButton);
 
-  videojs.registerComponent('BigVrPlayButton', BigVrPlayButton);
+  videojs.registerComponent('BigVrPlayButton', BigVrPlayButton);*/
 
   var defaults = {
     debug: false,
@@ -52376,42 +52557,30 @@
       message: "Your browser/device does not support HLS 360 video. See <a href='http://webvr.info'>http://webvr.info</a> for assistance."
     }
   };
-  var Plugin = videojs.getPlugin('plugin');
-  var Component = videojs.getComponent('Component');
 
   var VR =
     /*#__PURE__*/
-    function (_Plugin) {
-      inheritsLoose(VR, _Plugin);
-
+    function () {
       function VR(player, options) {
         var _this;
 
-        var settings = videojs.mergeOptions(defaults, options);
-        _this = _Plugin.call(this, player, settings) || this;
+        var settings = options;
+        _this = this;
         _this.options_ = settings;
         _this.player_ = player;
-        _this.bigPlayButtonIndex_ = player.children().indexOf(player.getChild('BigPlayButton')) || 0; // custom videojs-errors integration boolean
 
-        _this.videojsErrorsSupport_ = !!videojs.errors;
-
-        if (_this.videojsErrorsSupport_) {
-          player.errors({
-            errors: errors
-          });
-        } // IE 11 does not support enough webgl to be supported
+        // IE 11 does not support enough webgl to be supported
         // older safari does not support cors, so it wont work
-
-
-        if (videojs.browser.IE_VERSION || !corsSupport) {
+        if (IE_VERSION || !corsSupport) {
           // if a player triggers error before 'loadstart' is fired
           // video.js will reset the error overlay
-          _this.player_.on('loadstart', function () {
+          // TODO: convert for flowplayer (probably via api load event?)
+          /*_this.player_.on('loadstart', function () {
             _this.triggerError_({
               code: 'web-vr-not-supported',
               dismiss: false
             });
-          });
+          });*/
 
           return assertThisInitialized(_this);
         }
@@ -52421,16 +52590,16 @@
           ROTATE_INSTRUCTIONS_DISABLED: true
         });
         _this.polyfill_ = new WebVRPolyfill();
-        _this.handleVrDisplayActivate_ = videojs.bind(assertThisInitialized(_this), _this.handleVrDisplayActivate_);
-        _this.handleVrDisplayDeactivate_ = videojs.bind(assertThisInitialized(_this), _this.handleVrDisplayDeactivate_);
-        _this.handleResize_ = videojs.bind(assertThisInitialized(_this), _this.handleResize_);
-        _this.animate_ = videojs.bind(assertThisInitialized(_this), _this.animate_);
+        _this.handleVrDisplayActivate_ = _this.handleVrDisplayActivate_.bind( _this );
+        _this.handleVrDisplayDeactivate_ = _this.handleVrDisplayDeactivate_.bind( _this )
+        _this.handleResize_ = _this.handleResize_.bind( _this );
+        _this.animate_ = _this.animate_.bind( _this );
 
         _this.setProjection(_this.options_.projection); // any time the video element is recycled for ads
         // we have to reset the vr state and re-init after ad
 
-
-        _this.on(player, 'adstart', function () {
+        // TODO: convert to flowplayer (do we have in-the-middle ads?)
+        /*_this.on(player, 'adstart', function () {
           return player.setTimeout(function () {
             // if the video element was recycled for this ad
             if (!player.ads || !player.ads.videoElementRecycled()) {
@@ -52445,9 +52614,10 @@
 
             _this.one(player, 'playing', _this.init);
           });
-        }, 1);
+        }, 1);*/
 
-        _this.on(player, 'loadedmetadata', _this.init);
+        // TODO: convert for flowplayer (via api's event - do we have one for load meta data?)
+        //_this.on(player, 'loadedmetadata', _this.init);
 
         return _this;
       }
@@ -52476,10 +52646,11 @@
         if (projection === 'AUTO') {
           // mediainfo cannot be set to auto or we would infinite loop here
           // each source should know wether they are 360 or not, if using AUTO
-          if (this.player_.mediainfo && this.player_.mediainfo.projection && this.player_.mediainfo.projection !== 'AUTO') {
+          // TODO: convert for flowplayer
+          /*if (this.player_.mediainfo && this.player_.mediainfo.projection && this.player_.mediainfo.projection !== 'AUTO') {
             var autoProjection = getInternalProjectionName(this.player_.mediainfo.projection);
             return this.changeProjection_(autoProjection);
-          }
+          }*/
 
           return this.changeProjection_('NONE');
         } else if (projection === '360') {
@@ -52837,19 +53008,20 @@
 
       _proto.triggerError_ = function triggerError_(errorObj) {
         // if we have videojs-errors use it
-        if (this.videojsErrorsSupport_) {
+        // TODO: do we have flowplayer-specific errors reporter?
+        /*if (this.videojsErrorsSupport_) {
           this.player_.error(errorObj); // if we don't have videojs-errors just use a normal player error
-        } else {
-          // strip any html content from the error message
-          // as it is not supported outside of videojs-errors
-          var div = document$1.createElement('div');
-          div.innerHTML = errors[errorObj.code].message;
-          var message = div.textContent || div.innerText || '';
-          this.player_.error({
-            code: errorObj.code,
-            message: message
-          });
-        }
+        } else {*/
+        // strip any html content from the error message
+        // as it is not supported outside of videojs-errors
+        var div = document$1.createElement('div');
+        div.innerHTML = errors[errorObj.code].message;
+        var message = div.textContent || div.innerText || '';
+        this.player_.error({
+          code: errorObj.code,
+          message: message
+        });
+        //}
       };
 
       _proto.log = function log() {
@@ -52862,7 +53034,7 @@
         }
 
         msgs.forEach(function (msg) {
-          videojs.log('VR: ', msg);
+          console.log('VR: ', msg);
         });
       };
 
@@ -52876,7 +53048,8 @@
         this.vrDisplay.requestPresent([{
           source: this.renderedCanvas
         }]).then(function () {
-          if (!_this3.vrDisplay.cardboardUI_ || !videojs.browser.IS_IOS) {
+          // TODO: check this, as we don't seem to have cardboardUI_ (even check what's vrDisplay pointing to at this point - I think this is a real VR display on a VR device)
+          if (!_this3.vrDisplay.cardboardUI_ || !IS_IOS) {
             return;
           } // webvr-polyfill/cardboard ui only watches for click events
           // to tell that the back arrow button is pressed during cardboard vr.
@@ -52953,7 +53126,7 @@
       };
 
       _proto.togglePlay_ = function togglePlay_() {
-        if (this.player_.paused()) {
+        if (this.player_.paused) {
           this.player_.play();
         } else {
           this.player_.pause();
@@ -53006,16 +53179,17 @@
       };
 
       _proto.handleResize_ = function handleResize_() {
-        var width = this.player_.currentWidth();
+        // TODO: convert for flowplayer
+        /*var width = this.player_.currentWidth();
         var height = this.player_.currentHeight();
         this.effect.setSize(width, height, false);
         this.camera.aspect = width / height;
-        this.camera.updateProjectionMatrix();
+        this.camera.updateProjectionMatrix();*/
       };
 
       _proto.setProjection = function setProjection(projection) {
         if (!getInternalProjectionName(projection)) {
-          videojs.log.error('videojs-vr: please pass a valid projection ' + validProjections.join(', '));
+          videojs.log.error('flowplayer vr: please pass a valid projection ' + validProjections.join(', '));
           return;
         }
 
@@ -53027,6 +53201,7 @@
         var _this4 = this;
 
         this.reset();
+        // TODO: convert for flowplayer (width + height getting)
         this.camera = new PerspectiveCamera(75, this.player_.currentWidth() / this.player_.currentHeight(), 1, 1000); // Store vector representing the direction in which the camera is looking, in world space.
 
         this.cameraVector = new Vector3();
@@ -53052,17 +53227,19 @@
           return;
         }
 
-        this.player_.removeChild('BigPlayButton');
-        this.player_.addChild('BigVrPlayButton', {}, this.bigPlayButtonIndex_);
+        // TODO: remove and add big play button to flowplayer
+        /*this.player_.removeChild('BigPlayButton');
+        this.player_.addChild('BigVrPlayButton', {}, this.bigPlayButtonIndex_);*/
         this.player_.bigPlayButton = this.player_.getChild('BigVrPlayButton'); // mobile devices, or cardboard forced to on
 
-        if (this.options_.forceCardboard || videojs.browser.IS_ANDROID || videojs.browser.IS_IOS) {
+        if (this.options_.forceCardboard || IS_ANDROID || IS_IOS) {
           this.addCardboardButton_();
         } // if ios remove full screen toggle
 
 
-        if (videojs.browser.IS_IOS && this.player_.controlBar && this.player_.controlBar.fullscreenToggle) {
-          this.player_.controlBar.fullscreenToggle.hide();
+        // TODO: how do we check for control bar presence on flowplayer?
+        if (IS_IOS/*&& this.player_.controlBar && this.player_.controlBar.fullscreenToggle*/) {
+          //this.player_.controlBar.fullscreenToggle.hide();
         }
 
         this.camera.position.set(0, 0, 0);
@@ -53097,8 +53274,10 @@
           }
         };
 
+        // TODO: convert for flowplayer (width + height)
         this.renderer.setSize(this.player_.currentWidth(), this.player_.currentHeight(), false);
         this.effect = new VREffect(this.renderer);
+        // TODO: convert for flowplayer (width + height)
         this.effect.setSize(this.player_.currentWidth(), this.player_.currentHeight(), false);
         this.vrDisplay = null; // Previous timestamps for gamepad updates
 
@@ -53139,7 +53318,7 @@
                 canvas: _this4.renderedCanvas,
                 // check if its a half sphere view projection
                 halfView: _this4.currentProjection_.indexOf('180') === 0,
-                orientation: videojs.browser.IS_IOS || videojs.browser.IS_ANDROID || false
+                orientation: IS_IOS || IS_ANDROID || false
               };
 
               if (_this4.options_.motionControls === false) {
@@ -53170,28 +53349,32 @@
           this.omniController.one('audiocontext-suspended', function () {
             _this4.player.pause();
 
+            // TODO: convert for flowplayer (via API)
             _this4.player.one('playing', function () {
               audiocontext.resume();
             });
           });
         }
 
+        // TODO: convert for flowplayer (does API have fullscreen change event?)
         this.on(this.player_, 'fullscreenchange', this.handleResize_);
         window$1.addEventListener('vrdisplaypresentchange', this.handleResize_, true);
         window$1.addEventListener('resize', this.handleResize_, true);
         window$1.addEventListener('vrdisplayactivate', this.handleVrDisplayActivate_, true);
         window$1.addEventListener('vrdisplaydeactivate', this.handleVrDisplayDeactivate_, true);
         this.initialized_ = true;
-        this.trigger('initialized');
+        //this.trigger('initialized');
       };
 
       _proto.addCardboardButton_ = function addCardboardButton_() {
-        if (!this.player_.controlBar.getChild('CardboardButton')) {
+        // TODO: convert for flowplayer (add cardboard button)
+        /*if (!this.player_.controlBar.getChild('CardboardButton')) {
           this.player_.controlBar.addChild('CardboardButton', {});
-        }
+        }*/
       };
 
       _proto.getVideoEl_ = function getVideoEl_() {
+        // TODO: convert for flowplayer
         return this.player_.el().getElementsByTagName('video')[0];
       };
 
@@ -53226,7 +53409,8 @@
         window$1.removeEventListener('vrdisplayactivate', this.handleVrDisplayActivate_, true);
         window$1.removeEventListener('vrdisplaydeactivate', this.handleVrDisplayDeactivate_, true); // re-add the big play button to player
 
-        if (!this.player_.getChild('BigPlayButton')) {
+        // TODO: convert these buttons for flowplayer
+        /*if (!this.player_.getChild('BigPlayButton')) {
           this.player_.addChild('BigPlayButton', {}, this.bigPlayButtonIndex_);
         }
 
@@ -53237,11 +53421,13 @@
 
         if (this.player_.getChild('CardboardButton')) {
           this.player_.controlBar.removeChild('CardboardButton');
-        } // show the fullscreen again
+        } // show the fullscreen again*/
 
 
-        if (videojs.browser.IS_IOS && this.player_.controlBar && this.player_.controlBar.fullscreenToggle) {
-          this.player_.controlBar.fullscreenToggle.show();
+        // TODO: controlbar check for flowplayer
+        if (IS_IOS/* && this.player_.controlBar && this.player_.controlBar.fullscreenToggle*/) {
+          // TODO: convert for flowplayer
+          //this.player_.controlBar.fullscreenToggle.show();
         } // reset the video element style so that it will be displayed
 
 
@@ -53268,8 +53454,6 @@
       };
 
       _proto.dispose = function dispose() {
-        _Plugin.prototype.dispose.call(this);
-
         this.reset();
       };
 
@@ -53278,12 +53462,11 @@
       };
 
       return VR;
-    }(Plugin);
+    }();
 
-  VR.prototype.setTimeout = Component.prototype.setTimeout;
-  VR.prototype.clearTimeout = Component.prototype.clearTimeout;
-  VR.VERSION = version;
-  videojs.registerPlugin('vr', VR);
+  VR.prototype.setTimeout = window.setTimeout;
+  VR.prototype.clearTimeout = window.clearTimeout;
+  //VR.VERSION = version;
 
   return VR;
 
