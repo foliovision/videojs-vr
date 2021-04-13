@@ -52506,7 +52506,7 @@
       return CardboardButton;
     }();
 
-    // TODO: add cardboard and big play buttons to flowplayer
+  // TODO: add cardboard and big play buttons to flowplayer
   /*videojs.registerComponent('CardboardButton', CardboardButton);
 
   var BigPlayButton = videojs.getComponent('BigPlayButton');
@@ -52571,10 +52571,11 @@
 
         // IE 11 does not support enough webgl to be supported
         // older safari does not support cors, so it wont work
-        if (IE_VERSION || !corsSupport) {
+        if (IE_VERSION || !corsSupport()) {
           // if a player triggers error before 'loadstart' is fired
           // video.js will reset the error overlay
           // TODO: convert for flowplayer (probably via api load event?)
+          // TODO: not sure how this actually works, as the description doesn't make much sense really
           /*_this.player_.on('loadstart', function () {
             _this.triggerError_({
               code: 'web-vr-not-supported',
