@@ -38,6 +38,7 @@
     "build:js": "rollup -c scripts/rollup.config.js",
     "build:css": "node-sass src/plugin.scss dist/videojs-vr.css --output-style=compressed --linefeed=lf",
     "build:lang": "vjslang --dir dist/lang",
+    "build:folio": "cross-env-shell NO_TEST_BUNDLE=1 'rollup -c scripts/rollup.config.js'",
     "clean": "shx rm -rf ./dist ./test/dist && shx mkdir -p ./dist ./test/dist",
     "lint": "vjsstandard",
     "prepublishOnly": "npm-run-all build-prod && vjsverify --verbose",

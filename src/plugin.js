@@ -1,29 +1,15 @@
-import {version as VERSION} from '../package.json';
+//import {version as VERSION} from '../package.json';
 import window from 'global/window';
 import document from 'global/document';
 import WebVRPolyfill from 'webvr-polyfill';
-import videojs from 'video.js';
 import * as THREE from 'three';
 import VRControls from 'three/examples/js/controls/VRControls.js';
 import VREffect from 'three/examples/js/effects/VREffect.js';
 import OrbitOrientationContols from './orbit-orientation-controls.js';
 import * as utils from './utils';
+import * as browser from './browser';
 import CanvasPlayerControls from './canvas-player-controls';
 import OmnitoneController from './omnitone-controller';
-
-// import controls so they get regisetered with videojs
-import './cardboard-button';
-import './big-vr-play-button';
-
-// Default options for the plugin.
-const defaults = {
-  debug: false,
-  omnitone: false,
-  forceCardboard: false,
-  omnitoneOptions: {},
-  projection: 'AUTO',
-  sphereDetail: 128 // increasing number of polygons - was 32 originally
-};
 
 const errors = {
   'web-vr-out-of-date': {
@@ -43,32 +29,17 @@ const errors = {
   }
 };
 
-const Plugin = videojs.getPlugin('plugin');
-const Component = videojs.getComponent('Component');
-
-class VR extends Plugin {
+class VR {
   constructor(player, options) {
-    const settings = videojs.mergeOptions(defaults, options);
-
-    super(player, settings);
-
-    this.options_ = settings;
+    this.options_ = options;
     this.player_ = player;
-    this.bigPlayButtonIndex_ = player.children().indexOf(player.getChild('BigPlayButton')) || 0;
-
-    // custom videojs-errors integration boolean
-    this.videojsErrorsSupport_ = !!videojs.errors;
-
-    if (this.videojsErrorsSupport_) {
-      player.errors({errors});
-    }
 
     // IE 11 does not support enough webgl to be supported
     // older safari does not support cors, so it wont work
-    if (videojs.browser.IE_VERSION || !utils.corsSupport) {
+    if (browser.IE_VERSION || !utils.corsSupport) {
       // if a player triggers error before 'loadstart' is fired
       // video.js will reset the error overlay
-      this.player_.on('loadstart', () => {
+      api.on('ready', () => {
         this.triggerError_({code: 'web-vr-not-supported', dismiss: false});
       });
       return;
@@ -80,16 +51,17 @@ class VR extends Plugin {
     });
     this.polyfill_ = new WebVRPolyfill();
 
-    this.handleVrDisplayActivate_ = videojs.bind(this, this.handleVrDisplayActivate_);
-    this.handleVrDisplayDeactivate_ = videojs.bind(this, this.handleVrDisplayDeactivate_);
-    this.handleResize_ = videojs.bind(this, this.handleResize_);
-    this.animate_ = videojs.bind(this, this.animate_);
+    this.handleVrDisplayActivate_ = this.handleVrDisplayActivate_.bind(this);
+    this.handleVrDisplayDeactivate_ = this.handleVrDisplayDeactivate_.bind(this)
+    this.handleResize_ = this.handleResize_.bind(this);
+    this.animate_ = this.animate_.bind(this);
 
     this.setProjection(this.options_.projection);
 
     // any time the video element is recycled for ads
     // we have to reset the vr state and re-init after ad
-    this.on(player, 'adstart', () => player.setTimeout(() => {
+    // TODO: convert for flowplayer when we have mid-roll ads
+    /*this.on(player, 'adstart', () => player.setTimeout(() => {
       // if the video element was recycled for this ad
       if (!player.ads || !player.ads.videoElementRecycled()) {
         this.log('video element not recycled for this ad, no need to reset');
@@ -100,9 +72,11 @@ class VR extends Plugin {
       this.reset();
 
       this.one(player, 'playing', this.init);
-    }), 1);
+    }), 1);*/
 
-    this.on(player, 'loadedmetadata', this.init);
+    //this.on(player, 'loadedmetadata', this.init);
+    console.log('VR init (debug test - please remove this line once the module is stable)');
+    this.log('VR init');
   }
 
   changeProjection_(projection) {
@@ -120,11 +94,12 @@ class VR extends Plugin {
     if (projection === 'AUTO') {
       // mediainfo cannot be set to auto or we would infinite loop here
       // each source should know wether they are 360 or not, if using AUTO
-      if (this.player_.mediainfo && this.player_.mediainfo.projection && this.player_.mediainfo.projection !== 'AUTO') {
+      // TODO: convert for flowplayer
+      /*if (this.player_.mediainfo && this.player_.mediainfo.projection && this.player_.mediainfo.projection !== 'AUTO') {
         const autoProjection = utils.getInternalProjectionName(this.player_.mediainfo.projection);
 
         return this.changeProjection_(autoProjection);
-      }
+      }*/
       return this.changeProjection_('NONE');
     } else if (projection === '360') {
       this.movieGeometry = new THREE.SphereBufferGeometry(256, this.options_.sphereDetail, this.options_.sphereDetail);
@@ -500,24 +475,18 @@ void main() {
   }
 
   triggerError_(errorObj) {
-    // if we have videojs-errors use it
-    if (this.videojsErrorsSupport_) {
-      this.player_.error(errorObj);
-    // if we don't have videojs-errors just use a normal player error
-    } else {
-      // strip any html content from the error message
-      // as it is not supported outside of videojs-errors
-      const div = document.createElement('div');
+    // strip any html content from the error message
+    // as it is not supported outside of videojs-errors
+    const div = document.createElement('div');
 
-      div.innerHTML = errors[errorObj.code].message;
+    div.innerHTML = errors[errorObj.code].message;
 
-      const message = div.textContent || div.innerText || '';
+    const message = div.textContent || div.innerText || '';
 
-      this.player_.error({
-        code: errorObj.code,
-        message
-      });
-    }
+    this.player_.error({
+      code: errorObj.code,
+      message
+    });
   }
 
   log(...msgs) {
@@ -526,7 +495,7 @@ void main() {
     }
 
     msgs.forEach((msg) => {
-      videojs.log('VR: ', msg);
+      console.log('VR: ', msg);
     });
   }
 
@@ -535,7 +504,8 @@ void main() {
       return;
     }
     this.vrDisplay.requestPresent([{source: this.renderedCanvas}]).then(() => {
-      if (!this.vrDisplay.cardboardUI_ || !videojs.browser.IS_IOS) {
+      // TODO: check this, as we don't seem to have cardboardUI_ (even check what's vrDisplay pointing to at this point - I think this is a real VR display on a VR device)
+      if (!this.vrDisplay.cardboardUI_ || !browser.IS_IOS) {
         return;
       }
 
@@ -608,7 +578,7 @@ void main() {
   }
 
   togglePlay_() {
-    if (this.player_.paused()) {
+    if (this.player_.paused) {
       this.player_.play();
     } else {
       this.player_.pause();
@@ -658,8 +628,8 @@ void main() {
   }
 
   handleResize_() {
-    const width = this.player_.currentWidth();
-    const height = this.player_.currentHeight();
+    const width = $fp_player.width();
+    const height = $fp_player.height();
 
     this.effect.setSize(width, height, false);
     this.camera.aspect = width / height;
@@ -669,7 +639,7 @@ void main() {
   setProjection(projection) {
 
     if (!utils.getInternalProjectionName(projection)) {
-      videojs.log.error('videojs-vr: please pass a valid projection ' + utils.validProjections.join(', '));
+      console.error('flowplayer-vr: please pass a valid projection ' + utils.validProjections.join(', '));
       return;
     }
 
@@ -680,7 +650,7 @@ void main() {
   init() {
     this.reset();
 
-    this.camera = new THREE.PerspectiveCamera(75, this.player_.currentWidth() / this.player_.currentHeight(), 1, 1000);
+    this.camera = new THREE.PerspectiveCamera(75, $fp_player.width() / $fp_player.height(), 1, 1000);
     // Store vector representing the direction in which the camera is looking, in world space.
     this.cameraVector = new THREE.Vector3();
 
@@ -707,21 +677,23 @@ void main() {
       return;
     }
 
-    this.player_.removeChild('BigPlayButton');
+    // TODO: remove and add big play button to flowplayer
+    /*this.player_.removeChild('BigPlayButton');
     this.player_.addChild('BigVrPlayButton', {}, this.bigPlayButtonIndex_);
-    this.player_.bigPlayButton = this.player_.getChild('BigVrPlayButton');
+    this.player_.bigPlayButton = this.player_.getChild('BigVrPlayButton');*/
 
     // mobile devices, or cardboard forced to on
     if (this.options_.forceCardboard ||
-        videojs.browser.IS_ANDROID ||
-        videojs.browser.IS_IOS) {
+        browser.IS_ANDROID ||
+        browser.IS_IOS) {
       this.addCardboardButton_();
     }
 
     // if ios remove full screen toggle
-    if (videojs.browser.IS_IOS && this.player_.controlBar && this.player_.controlBar.fullscreenToggle) {
+    // TODO: convert to flowplayer
+    /*if (browser.IS_IOS && this.player_.controlBar && this.player_.controlBar.fullscreenToggle) {
       this.player_.controlBar.fullscreenToggle.hide();
-    }
+    }*/
 
     this.camera.position.set(0, 0, 0);
     this.renderer = new THREE.WebGLRenderer({
@@ -746,10 +718,10 @@ void main() {
       }
     };
 
-    this.renderer.setSize(this.player_.currentWidth(), this.player_.currentHeight(), false);
+    this.renderer.setSize($fp_player.width(), $fp_player.height(), false);
     this.effect = new VREffect(this.renderer);
 
-    this.effect.setSize(this.player_.currentWidth(), this.player_.currentHeight(), false);
+    this.effect.setSize($fp_player.width(), $fp_player.height(), false);
     this.vrDisplay = null;
 
     // Previous timestamps for gamepad updates
@@ -758,9 +730,10 @@ void main() {
     this.renderedCanvas = this.renderer.domElement;
     this.renderedCanvas.setAttribute('style', 'width: 100%; height: 100%; position: absolute; top:0;');
 
-    const videoElStyle = this.getVideoEl_().style;
+    const videoElement = root.find('video');
+    const videoElStyle = videoElement[0].style;
 
-    this.player_.el().insertBefore(this.renderedCanvas, this.player_.el().firstChild);
+    videoElement.insertBefore(this.renderedCanvas);
     videoElStyle.zIndex = '-1';
     videoElStyle.opacity = '0';
 
@@ -791,7 +764,7 @@ void main() {
             canvas: this.renderedCanvas,
             // check if its a half sphere view projection
             halfView: this.currentProjection_.indexOf('180') === 0,
-            orientation: videojs.browser.IS_IOS || videojs.browser.IS_ANDROID || false
+            orientation: browser.IS_IOS || browser.IS_ANDROID || false
           };
 
           if (this.options_.motionControls === false) {
@@ -819,30 +792,31 @@ void main() {
       );
       this.omniController.one('audiocontext-suspended', () => {
         this.player.pause();
-        this.player.one('playing', () => {
+        api.one('playing', () => {
           audiocontext.resume();
         });
       });
     }
 
-    this.on(this.player_, 'fullscreenchange', this.handleResize_);
+    api.on('fullscreen', this.handleResize_);
     window.addEventListener('vrdisplaypresentchange', this.handleResize_, true);
     window.addEventListener('resize', this.handleResize_, true);
     window.addEventListener('vrdisplayactivate', this.handleVrDisplayActivate_, true);
     window.addEventListener('vrdisplaydeactivate', this.handleVrDisplayDeactivate_, true);
 
     this.initialized_ = true;
-    this.trigger('initialized');
+    //this.trigger('initialized');
   }
 
   addCardboardButton_() {
-    if (!this.player_.controlBar.getChild('CardboardButton')) {
+    // TODO: convert for flowplayer (add cardboard button)
+    /*if (!this.player_.controlBar.getChild('CardboardButton')) {
       this.player_.controlBar.addChild('CardboardButton', {});
-    }
+    }*/
   }
 
   getVideoEl_() {
-    return this.player_.el().getElementsByTagName('video')[0];
+    return root.find('video:first')[0];
   }
 
   reset() {
@@ -876,23 +850,27 @@ void main() {
     window.removeEventListener('vrdisplayactivate', this.handleVrDisplayActivate_, true);
     window.removeEventListener('vrdisplaydeactivate', this.handleVrDisplayDeactivate_, true);
 
+    // TODO: convert these buttons for flowplayer
     // re-add the big play button to player
-    if (!this.player_.getChild('BigPlayButton')) {
+    /*if (!this.player_.getChild('BigPlayButton')) {
       this.player_.addChild('BigPlayButton', {}, this.bigPlayButtonIndex_);
     }
 
     if (this.player_.getChild('BigVrPlayButton')) {
       this.player_.removeChild('BigVrPlayButton');
-    }
+    }*/
 
+    // TODO: convert to flowplayer
     // remove the cardboard button
-    if (this.player_.getChild('CardboardButton')) {
+    /*if (this.player_.getChild('CardboardButton')) {
       this.player_.controlBar.removeChild('CardboardButton');
-    }
+    }*/
 
+    // TODO: controlbar check for flowplayer
     // show the fullscreen again
-    if (videojs.browser.IS_IOS && this.player_.controlBar && this.player_.controlBar.fullscreenToggle) {
-      this.player_.controlBar.fullscreenToggle.show();
+    if (browser.IS_IOS/* && this.player_.controlBar && this.player_.controlBar.fullscreenToggle*/) {
+      // TODO: convert for flowplayer
+      //this.player_.controlBar.fullscreenToggle.show();
     }
 
     // reset the video element style so that it will be displayed
@@ -922,7 +900,6 @@ void main() {
   }
 
   dispose() {
-    super.dispose();
     this.reset();
   }
 
@@ -931,10 +908,15 @@ void main() {
   }
 }
 
-VR.prototype.setTimeout = Component.prototype.setTimeout;
-VR.prototype.clearTimeout = Component.prototype.clearTimeout;
+VR.prototype.setTimeout = window.setTimeout;
+VR.prototype.clearTimeout = window.clearTimeout;
 
-VR.VERSION = VERSION;
+//VR.VERSION = VERSION;
 
-videojs.registerPlugin('vr', VR);
+api.on('load', function() {
+  new VR(root, {
+    'projection' : '360'
+  });
+});
+
 export default VR;

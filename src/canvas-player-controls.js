@@ -1,4 +1,6 @@
-import videojs from 'video.js';
+import * as dom from './dom';
+import EventTarget from './event-target';
+
 /**
  * This class reacts to interactions with the canvas and
  * triggers appropriate functionality on the player. Right now
@@ -9,33 +11,35 @@ import videojs from 'video.js';
  * 2. Only moving on/clicking the control bar or toggling play/pause should
  *    show the control bar. Moving around the scene in the canvas should not.
  */
-class CanvasPlayerControls extends videojs.EventTarget {
+class CanvasPlayerControls extends EventTarget {
   constructor(player, canvas) {
     super();
 
     this.player = player;
     this.canvas = canvas;
 
-    this.onMoveEnd = videojs.bind(this, this.onMoveEnd);
-    this.onMoveStart = videojs.bind(this, this.onMoveStart);
-    this.onMove = videojs.bind(this, this.onMove);
-    this.onControlBarMove = videojs.bind(this, this.onControlBarMove);
+    this.onMoveEnd = this.onMoveEnd.bind(this);
+    this.onMoveStart = this.onMoveStart.bind(this);
+    this.onMove = this.onMove.bind(this);
+    this.onControlBarMove = this.onControlBarMove.bind(this);
 
-    this.player.controlBar.on([
+    // TODO: port this to flowplayer - see comments for the function below
+    /*this.player.controlBar.on([
       'mousedown',
       'mousemove',
       'mouseup',
       'touchstart',
       'touchmove',
       'touchend'
-    ], this.onControlBarMove);
+    ], this.onControlBarMove);*/
 
     // we have to override these here because
     // video.js listens for user activity on the video element
     // and makes the user active when the mouse moves.
     // We don't want that for 3d videos
-    this.oldReportUserActivity = this.player.reportUserActivity;
-    this.player.reportUserActivity = () => {};
+
+    /*this.oldReportUserActivity = this.player.reportUserActivity;
+    this.player.reportUserActivity = () => {};*/
 
     // canvas movements
     this.canvas.addEventListener('mousedown', this.onMoveStart);
@@ -49,7 +53,7 @@ class CanvasPlayerControls extends videojs.EventTarget {
   }
 
   togglePlay() {
-    if (this.player.paused()) {
+    if (this.player.paused) {
       this.player.play();
     } else {
       this.player.pause();
@@ -61,7 +65,8 @@ class CanvasPlayerControls extends videojs.EventTarget {
     // if the player does not have a controlbar or
     // the move was a mouse click but not left click do not
     // toggle play.
-    if (!this.player.controls() || (e.type === 'mousedown' && !videojs.dom.isSingleLeftClick(e))) {
+    // TODO: how do we check for flowplayer having a controlbar?
+    if (/*!this.player.controls() || */(e.type === 'mousedown' && !dom.isSingleLeftClick(e))) {
       this.shouldTogglePlay = false;
       return;
     }
@@ -81,13 +86,14 @@ class CanvasPlayerControls extends videojs.EventTarget {
     // so 10 seems like a nice, round number.
     if (e.type === 'touchend' && this.touchMoveCount_ < 10) {
 
-      if (this.player.userActive() === false) {
+      // TODO: how to check/show the controlbar in flowplayer here? do we need to? let's test it...
+      /*if (this.player.userActive() === false) {
         this.player.userActive(true);
         return;
       }
 
       this.player.userActive(false);
-      return;
+      return;*/
     }
 
     if (!this.shouldTogglePlay) {
@@ -110,7 +116,8 @@ class CanvasPlayerControls extends videojs.EventTarget {
   }
 
   onControlBarMove(e) {
-    this.player.userActive(true);
+    // TODO: how to show control bar on flowplayer? do we need to? let's test
+    //this.player.userActive(true);
   }
 
   dispose() {
@@ -121,16 +128,17 @@ class CanvasPlayerControls extends videojs.EventTarget {
     this.canvas.removeEventListener('mouseup', this.onMoveEnd);
     this.canvas.removeEventListener('touchend', this.onMoveEnd);
 
-    this.player.controlBar.off([
+    // TODO: port this to flowplayer - see comments for _this.player.controlBar.on above
+    /*this.player.controlBar.off([
       'mousedown',
       'mousemove',
       'mouseup',
       'touchstart',
       'touchmove',
       'touchend'
-    ], this.onControlBarMove);
+    ], this.onControlBarMove);*/
 
-    this.player.reportUserActivity = this.oldReportUserActivity;
+    //this.player.reportUserActivity = this.oldReportUserActivity;
   }
 }
 

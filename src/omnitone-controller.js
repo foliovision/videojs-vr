@@ -1,9 +1,11 @@
-import videojs from 'video.js';
+import EventTarget from './event-target';
+import * as mergeoptions from './merge-options';
+import * as browser from './browser';
 
 /**
  * This class manages ambisonic decoding and binaural rendering via Omnitone library.
  */
-class OmnitoneController extends videojs.EventTarget {
+class OmnitoneController extends EventTarget {
   /**
    * Omnitone controller class.
    *
@@ -16,10 +18,10 @@ class OmnitoneController extends videojs.EventTarget {
   constructor(audioContext, omnitone, video, options) {
     super();
 
-    const settings = videojs.mergeOptions({
+    const settings = mergeOptions({
       // Safari uses the different AAC decoder than FFMPEG. The channel order is
       // The default 4ch AAC channel layout for FFMPEG AAC channel ordering.
-      channelMap: videojs.browser.IS_SAFARI ? [2, 0, 1, 3] : [0, 1, 2, 3],
+      channelMap: browser.IS_SAFARI ? [2, 0, 1, 3] : [0, 1, 2, 3],
       ambisonicOrder: 1
     }, options);
 
@@ -35,7 +37,7 @@ class OmnitoneController extends videojs.EventTarget {
       this.initialized = true;
       this.trigger({type: 'omnitone-ready'});
     }, (error) => {
-      videojs.log.warn(`videojs-vr: Omnitone initializes failed with the following error: ${error})`);
+      console.error(`flowplayer-vr: Omnitone initializes failed with the following error: ${error})`);
     });
   }
 
