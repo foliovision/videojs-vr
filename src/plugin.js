@@ -29,259 +29,283 @@ const errors = {
   }
 };
 
-class VR {
-  constructor(player, options) {
-    this.options_ = options;
-    this.player_ = player;
+jQuery( function($) {
 
-    // IE 11 does not support enough webgl to be supported
-    // older safari does not support cors, so it wont work
-    if (browser.IE_VERSION || !utils.corsSupport) {
-      // if a player triggers error before 'loadstart' is fired
-      // video.js will reset the error overlay
-      api.on('ready', () => {
-        this.triggerError_({code: 'web-vr-not-supported', dismiss: false});
-      });
-      return;
-    }
+  if( typeof(flowplayer) != "undefined" ) {
+    flowplayer(function (api, root) {
+      root = jQuery(root);
+      const $fp_player = root.find('.fp-player');
 
-    this.polyfill_ = new WebVRPolyfill({
-      // do not show rotate instructions
-      ROTATE_INSTRUCTIONS_DISABLED: true
-    });
-    this.polyfill_ = new WebVRPolyfill();
+      class VR {
 
-    this.handleVrDisplayActivate_ = this.handleVrDisplayActivate_.bind(this);
-    this.handleVrDisplayDeactivate_ = this.handleVrDisplayDeactivate_.bind(this)
-    this.handleResize_ = this.handleResize_.bind(this);
-    this.animate_ = this.animate_.bind(this);
+        constructor(player, options) {
+          this.options_ = options;
+          this.player_ = player;
 
-    this.setProjection(this.options_.projection);
-
-    // any time the video element is recycled for ads
-    // we have to reset the vr state and re-init after ad
-    // TODO: convert for flowplayer when we have mid-roll ads
-    /*this.on(player, 'adstart', () => player.setTimeout(() => {
-      // if the video element was recycled for this ad
-      if (!player.ads || !player.ads.videoElementRecycled()) {
-        this.log('video element not recycled for this ad, no need to reset');
-        return;
-      }
-
-      this.log('video element recycled for this ad, reseting');
-      this.reset();
-
-      this.one(player, 'playing', this.init);
-    }), 1);*/
-
-    //this.on(player, 'loadedmetadata', this.init);
-    console.log('VR init (debug test - please remove this line once the module is stable)');
-    this.log('VR init');
-  }
-
-  changeProjection_(projection) {
-    projection = utils.getInternalProjectionName(projection);
-    // don't change to an invalid projection
-    if (!projection) {
-      projection = 'NONE';
-    }
-
-    const position = {x: 0, y: 0, z: 0 };
-
-    if (this.scene) {
-      this.scene.remove(this.movieScreen);
-    }
-    if (projection === 'AUTO') {
-      // mediainfo cannot be set to auto or we would infinite loop here
-      // each source should know wether they are 360 or not, if using AUTO
-      // TODO: convert for flowplayer
-      /*if (this.player_.mediainfo && this.player_.mediainfo.projection && this.player_.mediainfo.projection !== 'AUTO') {
-        const autoProjection = utils.getInternalProjectionName(this.player_.mediainfo.projection);
-
-        return this.changeProjection_(autoProjection);
-      }*/
-      return this.changeProjection_('NONE');
-    } else if (projection === '360') {
-      this.movieGeometry = new THREE.SphereBufferGeometry(256, this.options_.sphereDetail, this.options_.sphereDetail);
-      this.movieMaterial = new THREE.MeshBasicMaterial({ map: this.videoTexture, overdraw: true, side: THREE.BackSide });
-
-      this.movieScreen = new THREE.Mesh(this.movieGeometry, this.movieMaterial);
-      this.movieScreen.position.set(position.x, position.y, position.z);
-
-      this.movieScreen.scale.x = -1;
-      this.movieScreen.quaternion.setFromAxisAngle({x: 0, y: 1, z: 0}, -Math.PI / 2);
-      this.scene.add(this.movieScreen);
-    } else if (projection === '360_LR' || projection === '360_TB') {
-      // Left eye view
-      let geometry = new THREE.SphereGeometry(
-        256,
-        this.options_.sphereDetail,
-        this.options_.sphereDetail
-      );
-
-      let uvs = geometry.faceVertexUvs[ 0 ];
-
-      for (let i = 0; i < uvs.length; i++) {
-        for (let j = 0; j < 3; j++) {
-          if (projection === '360_LR') {
-            uvs[ i ][ j ].x *= 0.5;
-          } else {
-            uvs[ i ][ j ].y *= 0.5;
-            uvs[ i ][ j ].y += 0.5;
+          // IE 11 does not support enough webgl to be supported
+          // older safari does not support cors, so it wont work
+          if (browser.IE_VERSION || !utils.corsSupport) {
+            // if a player triggers error before 'loadstart' is fired
+            // video.js will reset the error overlay
+            api.on('ready', () => {
+              this.triggerError_({code: 'web-vr-not-supported', dismiss: false});
+            });
+            return;
           }
+
+          this.polyfill_ = new WebVRPolyfill({
+            // do not show rotate instructions
+            ROTATE_INSTRUCTIONS_DISABLED: true
+          });
+          this.polyfill_ = new WebVRPolyfill();
+
+          this.handleVrDisplayActivate_ = this.handleVrDisplayActivate_.bind(this);
+          this.handleVrDisplayDeactivate_ = this.handleVrDisplayDeactivate_.bind(this)
+          this.handleResize_ = this.handleResize_.bind(this);
+          this.animate_ = this.animate_.bind(this);
+
+          this.setProjection(this.options_.projection);
+
+          // any time the video element is recycled for ads
+          // we have to reset the vr state and re-init after ad
+          // TODO: convert for flowplayer when we have mid-roll ads
+          /*this.on(player, 'adstart', () => player.setTimeout(() => {
+            // if the video element was recycled for this ad
+            if (!player.ads || !player.ads.videoElementRecycled()) {
+              this.log('video element not recycled for this ad, no need to reset');
+              return;
+            }
+
+            this.log('video element recycled for this ad, reseting');
+            this.reset();
+
+            this.one(player, 'playing', this.init);
+          }), 1);*/
+
+          //this.on(player, 'loadedmetadata', this.init);
+          console.log('VR init (debug test - please remove this line once the module is stable)');
+          this.log('VR init');
         }
-      }
 
-      this.movieGeometry = new THREE.BufferGeometry().fromGeometry(geometry);
-      this.movieMaterial = new THREE.MeshBasicMaterial({ map: this.videoTexture, overdraw: true, side: THREE.BackSide });
-
-      this.movieScreen = new THREE.Mesh(this.movieGeometry, this.movieMaterial);
-      this.movieScreen.scale.x = -1;
-      this.movieScreen.quaternion.setFromAxisAngle({x: 0, y: 1, z: 0}, -Math.PI / 2);
-      // display in left eye only
-      this.movieScreen.layers.set(1);
-      this.scene.add(this.movieScreen);
-
-      // Right eye view
-      geometry = new THREE.SphereGeometry(
-        256,
-        this.options_.sphereDetail,
-        this.options_.sphereDetail
-      );
-
-      uvs = geometry.faceVertexUvs[ 0 ];
-
-      for (let i = 0; i < uvs.length; i++) {
-        for (let j = 0; j < 3; j++) {
-          if (projection === '360_LR') {
-            uvs[ i ][ j ].x *= 0.5;
-            uvs[ i ][ j ].x += 0.5;
-          } else {
-            uvs[ i ][ j ].y *= 0.5;
+        changeProjection_(projection) {
+          projection = utils.getInternalProjectionName(projection);
+          // don't change to an invalid projection
+          if (!projection) {
+            projection = 'NONE';
           }
-        }
-      }
 
-      this.movieGeometry = new THREE.BufferGeometry().fromGeometry(geometry);
-      this.movieMaterial = new THREE.MeshBasicMaterial({ map: this.videoTexture, overdraw: true, side: THREE.BackSide });
+          const position = {x: 0, y: 0, z: 0};
 
-      this.movieScreen = new THREE.Mesh(this.movieGeometry, this.movieMaterial);
-      this.movieScreen.scale.x = -1;
-      this.movieScreen.quaternion.setFromAxisAngle({x: 0, y: 1, z: 0}, -Math.PI / 2);
-      // display in right eye only
-      this.movieScreen.layers.set(2);
-      this.scene.add(this.movieScreen);
-    } else if (projection === '360_CUBE') {
-      this.movieGeometry = new THREE.BoxGeometry(256, 256, 256);
-      this.movieMaterial = new THREE.MeshBasicMaterial({ map: this.videoTexture, overdraw: true, side: THREE.BackSide });
-
-      const left = [new THREE.Vector2(0, 0.5), new THREE.Vector2(0.333, 0.5), new THREE.Vector2(0.333, 1), new THREE.Vector2(0, 1)];
-      const right = [new THREE.Vector2(0.333, 0.5), new THREE.Vector2(0.666, 0.5), new THREE.Vector2(0.666, 1), new THREE.Vector2(0.333, 1)];
-      const top = [new THREE.Vector2(0.666, 0.5), new THREE.Vector2(1, 0.5), new THREE.Vector2(1, 1), new THREE.Vector2(0.666, 1)];
-      const bottom = [new THREE.Vector2(0, 0), new THREE.Vector2(0.333, 0), new THREE.Vector2(0.333, 0.5), new THREE.Vector2(0, 0.5)];
-      const front = [new THREE.Vector2(0.333, 0), new THREE.Vector2(0.666, 0), new THREE.Vector2(0.666, 0.5), new THREE.Vector2(0.333, 0.5)];
-      const back = [new THREE.Vector2(0.666, 0), new THREE.Vector2(1, 0), new THREE.Vector2(1, 0.5), new THREE.Vector2(0.666, 0.5)];
-
-      this.movieGeometry.faceVertexUvs[0] = [];
-
-      this.movieGeometry.faceVertexUvs[0][0] = [ right[2], right[1], right[3] ];
-      this.movieGeometry.faceVertexUvs[0][1] = [ right[1], right[0], right[3] ];
-
-      this.movieGeometry.faceVertexUvs[0][2] = [ left[2], left[1], left[3] ];
-      this.movieGeometry.faceVertexUvs[0][3] = [ left[1], left[0], left[3] ];
-
-      this.movieGeometry.faceVertexUvs[0][4] = [ top[2], top[1], top[3] ];
-      this.movieGeometry.faceVertexUvs[0][5] = [ top[1], top[0], top[3] ];
-
-      this.movieGeometry.faceVertexUvs[0][6] = [ bottom[2], bottom[1], bottom[3] ];
-      this.movieGeometry.faceVertexUvs[0][7] = [ bottom[1], bottom[0], bottom[3] ];
-
-      this.movieGeometry.faceVertexUvs[0][8] = [ front[2], front[1], front[3] ];
-      this.movieGeometry.faceVertexUvs[0][9] = [ front[1], front[0], front[3] ];
-
-      this.movieGeometry.faceVertexUvs[0][10] = [ back[2], back[1], back[3] ];
-      this.movieGeometry.faceVertexUvs[0][11] = [ back[1], back[0], back[3] ];
-
-      this.movieScreen = new THREE.Mesh(this.movieGeometry, this.movieMaterial);
-      this.movieScreen.position.set(position.x, position.y, position.z);
-      this.movieScreen.rotation.y = -Math.PI;
-
-      this.scene.add(this.movieScreen);
-    } else if (projection === '180' || projection === '180_LR' || projection === '180_MONO') {
-      let geometry = new THREE.SphereGeometry(
-        256,
-        this.options_.sphereDetail,
-        this.options_.sphereDetail,
-        Math.PI,
-        Math.PI
-      );
-
-      // Left eye view
-      geometry.scale(-1, 1, 1);
-      let uvs = geometry.faceVertexUvs[0];
-
-      if (projection !== '180_MONO') {
-        for (let i = 0; i < uvs.length; i++) {
-          for (let j = 0; j < 3; j++) {
-            uvs[i][j].x *= 0.5;
+          if (this.scene) {
+            this.scene.remove(this.movieScreen);
           }
-        }
-      }
+          if (projection === 'AUTO') {
+            // mediainfo cannot be set to auto or we would infinite loop here
+            // each source should know wether they are 360 or not, if using AUTO
+            // TODO: convert for flowplayer
+            /*if (this.player_.mediainfo && this.player_.mediainfo.projection && this.player_.mediainfo.projection !== 'AUTO') {
+              const autoProjection = utils.getInternalProjectionName(this.player_.mediainfo.projection);
 
-      this.movieGeometry = new THREE.BufferGeometry().fromGeometry(geometry);
-      this.movieMaterial = new THREE.MeshBasicMaterial({
-        map: this.videoTexture,
-        overdraw: true
-      });
-      this.movieScreen = new THREE.Mesh(this.movieGeometry, this.movieMaterial);
-      // display in left eye only
-      this.movieScreen.layers.set(1);
-      this.scene.add(this.movieScreen);
+              return this.changeProjection_(autoProjection);
+            }*/
+            return this.changeProjection_('NONE');
+          } else if (projection === '360') {
+            this.movieGeometry = new THREE.SphereBufferGeometry(256, this.options_.sphereDetail, this.options_.sphereDetail);
+            this.movieMaterial = new THREE.MeshBasicMaterial({
+              map: this.videoTexture,
+              overdraw: true,
+              side: THREE.BackSide
+            });
 
-      // Right eye view
-      geometry = new THREE.SphereGeometry(
-        256,
-        this.options_.sphereDetail,
-        this.options_.sphereDetail,
-        Math.PI,
-        Math.PI
-      );
-      geometry.scale(-1, 1, 1);
-      uvs = geometry.faceVertexUvs[0];
+            this.movieScreen = new THREE.Mesh(this.movieGeometry, this.movieMaterial);
+            this.movieScreen.position.set(position.x, position.y, position.z);
 
-      for (let i = 0; i < uvs.length; i++) {
-        for (let j = 0; j < 3; j++) {
-          uvs[i][j].x *= 0.5;
-          uvs[i][j].x += 0.5;
-        }
-      }
+            this.movieScreen.scale.x = -1;
+            this.movieScreen.quaternion.setFromAxisAngle({x: 0, y: 1, z: 0}, -Math.PI / 2);
+            this.scene.add(this.movieScreen);
+          } else if (projection === '360_LR' || projection === '360_TB') {
+            // Left eye view
+            let geometry = new THREE.SphereGeometry(
+              256,
+              this.options_.sphereDetail,
+              this.options_.sphereDetail
+            );
 
-      this.movieGeometry = new THREE.BufferGeometry().fromGeometry(geometry);
-      this.movieMaterial = new THREE.MeshBasicMaterial({
-        map: this.videoTexture,
-        overdraw: true
-      });
-      this.movieScreen = new THREE.Mesh(this.movieGeometry, this.movieMaterial);
-      // display in right eye only
-      this.movieScreen.layers.set(2);
-      this.scene.add(this.movieScreen);
-    } else if (projection === 'EAC' || projection === 'EAC_LR') {
-      const makeScreen = (mapMatrix, scaleMatrix) => {
-        // "Continuity correction?": because of discontinuous faces and aliasing,
-        // we truncate the 2-pixel-wide strips on all discontinuous edges,
-        const contCorrect = 2;
+            let uvs = geometry.faceVertexUvs[0];
 
-        this.movieGeometry = new THREE.BoxGeometry(256, 256, 256);
-        this.movieMaterial = new THREE.ShaderMaterial({
-          overdraw: true, side: THREE.BackSide,
-          uniforms: {
-            mapped: {value: this.videoTexture},
-            mapMatrix: {value: mapMatrix},
-            contCorrect: {value: contCorrect},
-            faceWH: {value: new THREE.Vector2(1 / 3, 1 / 2).applyMatrix3(scaleMatrix)},
-            vidWH: {value: new THREE.Vector2(this.videoTexture.image.videoWidth, this.videoTexture.image.videoHeight).applyMatrix3(scaleMatrix)}
-          },
-          vertexShader: `
+            for (let i = 0; i < uvs.length; i++) {
+              for (let j = 0; j < 3; j++) {
+                if (projection === '360_LR') {
+                  uvs[i][j].x *= 0.5;
+                } else {
+                  uvs[i][j].y *= 0.5;
+                  uvs[i][j].y += 0.5;
+                }
+              }
+            }
+
+            this.movieGeometry = new THREE.BufferGeometry().fromGeometry(geometry);
+            this.movieMaterial = new THREE.MeshBasicMaterial({
+              map: this.videoTexture,
+              overdraw: true,
+              side: THREE.BackSide
+            });
+
+            this.movieScreen = new THREE.Mesh(this.movieGeometry, this.movieMaterial);
+            this.movieScreen.scale.x = -1;
+            this.movieScreen.quaternion.setFromAxisAngle({x: 0, y: 1, z: 0}, -Math.PI / 2);
+            // display in left eye only
+            this.movieScreen.layers.set(1);
+            this.scene.add(this.movieScreen);
+
+            // Right eye view
+            geometry = new THREE.SphereGeometry(
+              256,
+              this.options_.sphereDetail,
+              this.options_.sphereDetail
+            );
+
+            uvs = geometry.faceVertexUvs[0];
+
+            for (let i = 0; i < uvs.length; i++) {
+              for (let j = 0; j < 3; j++) {
+                if (projection === '360_LR') {
+                  uvs[i][j].x *= 0.5;
+                  uvs[i][j].x += 0.5;
+                } else {
+                  uvs[i][j].y *= 0.5;
+                }
+              }
+            }
+
+            this.movieGeometry = new THREE.BufferGeometry().fromGeometry(geometry);
+            this.movieMaterial = new THREE.MeshBasicMaterial({
+              map: this.videoTexture,
+              overdraw: true,
+              side: THREE.BackSide
+            });
+
+            this.movieScreen = new THREE.Mesh(this.movieGeometry, this.movieMaterial);
+            this.movieScreen.scale.x = -1;
+            this.movieScreen.quaternion.setFromAxisAngle({x: 0, y: 1, z: 0}, -Math.PI / 2);
+            // display in right eye only
+            this.movieScreen.layers.set(2);
+            this.scene.add(this.movieScreen);
+          } else if (projection === '360_CUBE') {
+            this.movieGeometry = new THREE.BoxGeometry(256, 256, 256);
+            this.movieMaterial = new THREE.MeshBasicMaterial({
+              map: this.videoTexture,
+              overdraw: true,
+              side: THREE.BackSide
+            });
+
+            const left = [new THREE.Vector2(0, 0.5), new THREE.Vector2(0.333, 0.5), new THREE.Vector2(0.333, 1), new THREE.Vector2(0, 1)];
+            const right = [new THREE.Vector2(0.333, 0.5), new THREE.Vector2(0.666, 0.5), new THREE.Vector2(0.666, 1), new THREE.Vector2(0.333, 1)];
+            const top = [new THREE.Vector2(0.666, 0.5), new THREE.Vector2(1, 0.5), new THREE.Vector2(1, 1), new THREE.Vector2(0.666, 1)];
+            const bottom = [new THREE.Vector2(0, 0), new THREE.Vector2(0.333, 0), new THREE.Vector2(0.333, 0.5), new THREE.Vector2(0, 0.5)];
+            const front = [new THREE.Vector2(0.333, 0), new THREE.Vector2(0.666, 0), new THREE.Vector2(0.666, 0.5), new THREE.Vector2(0.333, 0.5)];
+            const back = [new THREE.Vector2(0.666, 0), new THREE.Vector2(1, 0), new THREE.Vector2(1, 0.5), new THREE.Vector2(0.666, 0.5)];
+
+            this.movieGeometry.faceVertexUvs[0] = [];
+
+            this.movieGeometry.faceVertexUvs[0][0] = [right[2], right[1], right[3]];
+            this.movieGeometry.faceVertexUvs[0][1] = [right[1], right[0], right[3]];
+
+            this.movieGeometry.faceVertexUvs[0][2] = [left[2], left[1], left[3]];
+            this.movieGeometry.faceVertexUvs[0][3] = [left[1], left[0], left[3]];
+
+            this.movieGeometry.faceVertexUvs[0][4] = [top[2], top[1], top[3]];
+            this.movieGeometry.faceVertexUvs[0][5] = [top[1], top[0], top[3]];
+
+            this.movieGeometry.faceVertexUvs[0][6] = [bottom[2], bottom[1], bottom[3]];
+            this.movieGeometry.faceVertexUvs[0][7] = [bottom[1], bottom[0], bottom[3]];
+
+            this.movieGeometry.faceVertexUvs[0][8] = [front[2], front[1], front[3]];
+            this.movieGeometry.faceVertexUvs[0][9] = [front[1], front[0], front[3]];
+
+            this.movieGeometry.faceVertexUvs[0][10] = [back[2], back[1], back[3]];
+            this.movieGeometry.faceVertexUvs[0][11] = [back[1], back[0], back[3]];
+
+            this.movieScreen = new THREE.Mesh(this.movieGeometry, this.movieMaterial);
+            this.movieScreen.position.set(position.x, position.y, position.z);
+            this.movieScreen.rotation.y = -Math.PI;
+
+            this.scene.add(this.movieScreen);
+          } else if (projection === '180' || projection === '180_LR' || projection === '180_MONO') {
+            let geometry = new THREE.SphereGeometry(
+              256,
+              this.options_.sphereDetail,
+              this.options_.sphereDetail,
+              Math.PI,
+              Math.PI
+            );
+
+            // Left eye view
+            geometry.scale(-1, 1, 1);
+            let uvs = geometry.faceVertexUvs[0];
+
+            if (projection !== '180_MONO') {
+              for (let i = 0; i < uvs.length; i++) {
+                for (let j = 0; j < 3; j++) {
+                  uvs[i][j].x *= 0.5;
+                }
+              }
+            }
+
+            this.movieGeometry = new THREE.BufferGeometry().fromGeometry(geometry);
+            this.movieMaterial = new THREE.MeshBasicMaterial({
+              map: this.videoTexture,
+              overdraw: true
+            });
+            this.movieScreen = new THREE.Mesh(this.movieGeometry, this.movieMaterial);
+            // display in left eye only
+            this.movieScreen.layers.set(1);
+            this.scene.add(this.movieScreen);
+
+            // Right eye view
+            geometry = new THREE.SphereGeometry(
+              256,
+              this.options_.sphereDetail,
+              this.options_.sphereDetail,
+              Math.PI,
+              Math.PI
+            );
+            geometry.scale(-1, 1, 1);
+            uvs = geometry.faceVertexUvs[0];
+
+            for (let i = 0; i < uvs.length; i++) {
+              for (let j = 0; j < 3; j++) {
+                uvs[i][j].x *= 0.5;
+                uvs[i][j].x += 0.5;
+              }
+            }
+
+            this.movieGeometry = new THREE.BufferGeometry().fromGeometry(geometry);
+            this.movieMaterial = new THREE.MeshBasicMaterial({
+              map: this.videoTexture,
+              overdraw: true
+            });
+            this.movieScreen = new THREE.Mesh(this.movieGeometry, this.movieMaterial);
+            // display in right eye only
+            this.movieScreen.layers.set(2);
+            this.scene.add(this.movieScreen);
+          } else if (projection === 'EAC' || projection === 'EAC_LR') {
+            const makeScreen = (mapMatrix, scaleMatrix) => {
+              // "Continuity correction?": because of discontinuous faces and aliasing,
+              // we truncate the 2-pixel-wide strips on all discontinuous edges,
+              const contCorrect = 2;
+
+              this.movieGeometry = new THREE.BoxGeometry(256, 256, 256);
+              this.movieMaterial = new THREE.ShaderMaterial({
+                overdraw: true, side: THREE.BackSide,
+                uniforms: {
+                  mapped: {value: this.videoTexture},
+                  mapMatrix: {value: mapMatrix},
+                  contCorrect: {value: contCorrect},
+                  faceWH: {value: new THREE.Vector2(1 / 3, 1 / 2).applyMatrix3(scaleMatrix)},
+                  vidWH: {value: new THREE.Vector2(this.videoTexture.image.videoWidth, this.videoTexture.image.videoHeight).applyMatrix3(scaleMatrix)}
+                },
+                vertexShader: `
 varying vec2 vUv;
 uniform mat3 mapMatrix;
 
@@ -289,7 +313,7 @@ void main() {
   vUv = (mapMatrix * vec3(uv, 1.)).xy;
   gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.);
 }`,
-          fragmentShader: `
+                fragmentShader: `
 varying vec2 vUv;
 uniform sampler2D mapped;
 uniform vec2 faceWH;
@@ -310,613 +334,616 @@ void main() {
 
   gl_FragColor = texture2D(mapped, eUv);
 }`
-        });
+              });
 
-        const right = [new THREE.Vector2(0, 1 / 2), new THREE.Vector2(1 / 3, 1 / 2), new THREE.Vector2(1 / 3, 1), new THREE.Vector2(0, 1)];
-        const front = [new THREE.Vector2(1 / 3, 1 / 2), new THREE.Vector2(2 / 3, 1 / 2), new THREE.Vector2(2 / 3, 1), new THREE.Vector2(1 / 3, 1)];
-        const left = [new THREE.Vector2(2 / 3, 1 / 2), new THREE.Vector2(1, 1 / 2), new THREE.Vector2(1, 1), new THREE.Vector2(2 / 3, 1)];
-        const bottom = [new THREE.Vector2(1 / 3, 0), new THREE.Vector2(1 / 3, 1 / 2), new THREE.Vector2(0, 1 / 2), new THREE.Vector2(0, 0)];
-        const back = [new THREE.Vector2(1 / 3, 1 / 2), new THREE.Vector2(1 / 3, 0), new THREE.Vector2(2 / 3, 0), new THREE.Vector2(2 / 3, 1 / 2)];
-        const top = [new THREE.Vector2(1, 0), new THREE.Vector2(1, 1 / 2), new THREE.Vector2(2 / 3, 1 / 2), new THREE.Vector2(2 / 3, 0)];
+              const right = [new THREE.Vector2(0, 1 / 2), new THREE.Vector2(1 / 3, 1 / 2), new THREE.Vector2(1 / 3, 1), new THREE.Vector2(0, 1)];
+              const front = [new THREE.Vector2(1 / 3, 1 / 2), new THREE.Vector2(2 / 3, 1 / 2), new THREE.Vector2(2 / 3, 1), new THREE.Vector2(1 / 3, 1)];
+              const left = [new THREE.Vector2(2 / 3, 1 / 2), new THREE.Vector2(1, 1 / 2), new THREE.Vector2(1, 1), new THREE.Vector2(2 / 3, 1)];
+              const bottom = [new THREE.Vector2(1 / 3, 0), new THREE.Vector2(1 / 3, 1 / 2), new THREE.Vector2(0, 1 / 2), new THREE.Vector2(0, 0)];
+              const back = [new THREE.Vector2(1 / 3, 1 / 2), new THREE.Vector2(1 / 3, 0), new THREE.Vector2(2 / 3, 0), new THREE.Vector2(2 / 3, 1 / 2)];
+              const top = [new THREE.Vector2(1, 0), new THREE.Vector2(1, 1 / 2), new THREE.Vector2(2 / 3, 1 / 2), new THREE.Vector2(2 / 3, 0)];
 
-        for (const face of [right, front, left, bottom, back, top]) {
-          const height = this.videoTexture.image.videoHeight;
-          let lowY = 1;
-          let highY = 0;
+              for (const face of [right, front, left, bottom, back, top]) {
+                const height = this.videoTexture.image.videoHeight;
+                let lowY = 1;
+                let highY = 0;
 
-          for (const vector of face) {
-            if (vector.y < lowY) {
-              lowY = vector.y;
+                for (const vector of face) {
+                  if (vector.y < lowY) {
+                    lowY = vector.y;
+                  }
+                  if (vector.y > highY) {
+                    highY = vector.y;
+                  }
+                }
+
+                for (const vector of face) {
+                  if (Math.abs(vector.y - lowY) < Number.EPSILON) {
+                    vector.y += contCorrect / height;
+                  }
+                  if (Math.abs(vector.y - highY) < Number.EPSILON) {
+                    vector.y -= contCorrect / height;
+                  }
+
+                  vector.x = vector.x / height * (height - contCorrect * 2) + contCorrect / height;
+                }
+              }
+
+              this.movieGeometry.faceVertexUvs[0] = [];
+
+              this.movieGeometry.faceVertexUvs[0][0] = [right[2], right[1], right[3]];
+              this.movieGeometry.faceVertexUvs[0][1] = [right[1], right[0], right[3]];
+
+              this.movieGeometry.faceVertexUvs[0][2] = [left[2], left[1], left[3]];
+              this.movieGeometry.faceVertexUvs[0][3] = [left[1], left[0], left[3]];
+
+              this.movieGeometry.faceVertexUvs[0][4] = [top[2], top[1], top[3]];
+              this.movieGeometry.faceVertexUvs[0][5] = [top[1], top[0], top[3]];
+
+              this.movieGeometry.faceVertexUvs[0][6] = [bottom[2], bottom[1], bottom[3]];
+              this.movieGeometry.faceVertexUvs[0][7] = [bottom[1], bottom[0], bottom[3]];
+
+              this.movieGeometry.faceVertexUvs[0][8] = [front[2], front[1], front[3]];
+              this.movieGeometry.faceVertexUvs[0][9] = [front[1], front[0], front[3]];
+
+              this.movieGeometry.faceVertexUvs[0][10] = [back[2], back[1], back[3]];
+              this.movieGeometry.faceVertexUvs[0][11] = [back[1], back[0], back[3]];
+
+              this.movieScreen = new THREE.Mesh(this.movieGeometry, this.movieMaterial);
+              this.movieScreen.position.set(position.x, position.y, position.z);
+              this.movieScreen.rotation.y = -Math.PI;
+              return this.movieScreen;
+            };
+
+            if (projection === 'EAC') {
+              this.scene.add(makeScreen(new THREE.Matrix3(), new THREE.Matrix3()));
+            } else {
+              const scaleMatrix = new THREE.Matrix3().set(
+                0, 0.5, 0,
+                1, 0, 0,
+                0, 0, 1
+              );
+
+              makeScreen(new THREE.Matrix3().set(
+                0, -0.5, 0.5,
+                1, 0, 0,
+                0, 0, 1
+              ), scaleMatrix);
+              // display in left eye only
+              this.movieScreen.layers.set(1);
+              this.scene.add(this.movieScreen);
+
+              makeScreen(new THREE.Matrix3().set(
+                0, -0.5, 1,
+                1, 0, 0,
+                0, 0, 1
+              ), scaleMatrix);
+              // display in right eye only
+              this.movieScreen.layers.set(2);
+              this.scene.add(this.movieScreen);
             }
-            if (vector.y > highY) {
-              highY = vector.y;
+          } else if (projection === 'FISHEYE') {
+
+            this.movieGeometry = new SphereGeometry(
+              256, // radius - sphere´s radius
+              48, // widthSegments - number of horizontal segments
+              48, // heightSegments - number of vertical segments
+              0, // phiStart - specify horizontal starting angle
+              2 * Math.PI, // phiLength - specify horizontal sweep angle size
+              0, // thetaStart - specify vercial starting angle
+              Math.PI // thetaLength - specify vertical sweep angle
+            );
+
+            this.movieMaterial = new MeshBasicMaterial({
+              map: this.videoTexture,
+              overdraw: true,
+              side: BackSide
+            });
+
+            for (let i = 0; i < this.movieGeometry.faceVertexUvs[0].length; i++) {
+              const uvs = this.movieGeometry.faceVertexUvs[0][i];
+              const face = this.movieGeometry.faces[i];
+
+              for (let j = 0; j < 3; j++) {
+                const x = face.vertexNormals[j].x;
+                const y = face.vertexNormals[j].y;
+                const z = face.vertexNormals[j].z;
+
+                // Hemispherical fish-eye:
+
+                // uvs[j].x = (x + 1) / 2;
+                // uvs[j].y = (z + 1) / 2;
+
+                // Angular fish-eyes:
+
+                const k = 0.0; // Fish-eye factor
+                // Equidistant:   k = 0
+                // Stereographic: k = 0.5
+                // Orthographic:  k = -1.0
+                // Equisolid:     k = -0.5
+                // Rectilinear:   k = 1.0
+                const theta_spherical = Math.acos(z); // Spherical angle
+                let rho = 0; // Radius
+
+                if (k >= -1 && k < 0) {
+                  rho = (1 / k) * Math.sin(k * theta_spherical);
+                } else if (k == 0) {
+                  rho = theta_spherical;
+                } else if (k > 0 && k <= 1) {
+                  rho = (1 / k) * Math.tan(k * theta_spherical);
+                } else {
+                  console.error('Illegal fish-eye factor!');
+                }
+
+                rho = rho / Math.PI; // Interval correction
+                const theta_polar = Math.atan2(y, x); // Polar angle
+
+                // Convert to Cartesian coordinates
+
+                uvs[j].x = (rho * Math.cos(theta_polar)) + 0.5;
+                uvs[j].y = (rho * Math.sin(theta_polar)) + 0.5;
+              }
             }
+
+            // this.movieGeometry.rotateX(-Math.PI / 2); // Floor mount
+            // this.movieGeometry.rotateX(Math.PI / 2);  // Ceiling mount
+            this.movieGeometry.rotateY(Math.PI); // Wall mount
+            this.movieGeometry.uvsNeedUpdate = true;
+            this.movieScreen = new Mesh(this.movieGeometry, this.movieMaterial);
+            this.scene.add(this.movieScreen);
+            this.scene.background = new Color(0x444444);
           }
 
-          for (const vector of face) {
-            if (Math.abs(vector.y - lowY) < Number.EPSILON) {
-              vector.y += contCorrect / height;
-            }
-            if (Math.abs(vector.y - highY) < Number.EPSILON) {
-              vector.y -= contCorrect / height;
-            }
+          this.currentProjection_ = projection;
 
-            vector.x = vector.x / height * (height - contCorrect * 2) + contCorrect / height;
-          }
         }
 
-        this.movieGeometry.faceVertexUvs[0] = [];
+        triggerError_(errorObj) {
+          // strip any html content from the error message
+          // as it is not supported outside of videojs-errors
+          const div = document.createElement('div');
 
-        this.movieGeometry.faceVertexUvs[0][0] = [ right[2], right[1], right[3] ];
-        this.movieGeometry.faceVertexUvs[0][1] = [ right[1], right[0], right[3] ];
+          div.innerHTML = errors[errorObj.code].message;
 
-        this.movieGeometry.faceVertexUvs[0][2] = [ left[2], left[1], left[3] ];
-        this.movieGeometry.faceVertexUvs[0][3] = [ left[1], left[0], left[3] ];
+          const message = div.textContent || div.innerText || '';
 
-        this.movieGeometry.faceVertexUvs[0][4] = [ top[2], top[1], top[3] ];
-        this.movieGeometry.faceVertexUvs[0][5] = [ top[1], top[0], top[3] ];
+          this.player_.error({
+            code: errorObj.code,
+            message
+          });
+        }
 
-        this.movieGeometry.faceVertexUvs[0][6] = [ bottom[2], bottom[1], bottom[3] ];
-        this.movieGeometry.faceVertexUvs[0][7] = [ bottom[1], bottom[0], bottom[3] ];
+        log(...msgs) {
+          if (!this.options_.debug) {
+            return;
+          }
 
-        this.movieGeometry.faceVertexUvs[0][8] = [ front[2], front[1], front[3] ];
-        this.movieGeometry.faceVertexUvs[0][9] = [ front[1], front[0], front[3] ];
+          msgs.forEach((msg) => {
+            console.log('VR: ', msg);
+          });
+        }
 
-        this.movieGeometry.faceVertexUvs[0][10] = [ back[2], back[1], back[3] ];
-        this.movieGeometry.faceVertexUvs[0][11] = [ back[1], back[0], back[3] ];
+        handleVrDisplayActivate_() {
+          if (!this.vrDisplay) {
+            return;
+          }
+          this.vrDisplay.requestPresent([{source: this.renderedCanvas}]).then(() => {
+            // TODO: check this, as we don't seem to have cardboardUI_ (even check what's vrDisplay pointing to at this point - I think this is a real VR display on a VR device)
+            if (!this.vrDisplay.cardboardUI_ || !browser.IS_IOS) {
+              return;
+            }
 
-        this.movieScreen = new THREE.Mesh(this.movieGeometry, this.movieMaterial);
-        this.movieScreen.position.set(position.x, position.y, position.z);
-        this.movieScreen.rotation.y = -Math.PI;
-        return this.movieScreen;
-      };
+            // webvr-polyfill/cardboard ui only watches for click events
+            // to tell that the back arrow button is pressed during cardboard vr.
+            // but somewhere along the line these events are silenced with preventDefault
+            // but only on iOS, so we translate them ourselves here
+            let touches = [];
+            const iosCardboardTouchStart_ = (e) => {
+              for (let i = 0; i < e.touches.length; i++) {
+                touches.push(e.touches[i]);
+              }
+            };
 
-      if (projection === 'EAC') {
-        this.scene.add(makeScreen(new THREE.Matrix3(), new THREE.Matrix3()));
-      } else {
-        const scaleMatrix = new THREE.Matrix3().set(
-          0, 0.5, 0,
-          1, 0, 0,
-          0, 0, 1
-        );
+            const iosCardboardTouchEnd_ = (e) => {
+              if (!touches.length) {
+                return;
+              }
 
-        makeScreen(new THREE.Matrix3().set(
-          0, -0.5, 0.5,
-          1, 0, 0,
-          0, 0, 1
-        ), scaleMatrix);
-        // display in left eye only
-        this.movieScreen.layers.set(1);
-        this.scene.add(this.movieScreen);
+              touches.forEach((t) => {
+                const simulatedClick = new window.MouseEvent('click', {
+                  screenX: t.screenX,
+                  screenY: t.screenY,
+                  clientX: t.clientX,
+                  clientY: t.clientY
+                });
 
-        makeScreen(new THREE.Matrix3().set(
-          0, -0.5, 1,
-          1, 0, 0,
-          0, 0, 1
-        ), scaleMatrix);
-        // display in right eye only
-        this.movieScreen.layers.set(2);
-        this.scene.add(this.movieScreen);
-      }
-    } else if (projection === 'FISHEYE') {
+                this.renderedCanvas.dispatchEvent(simulatedClick);
+              });
 
-      this.movieGeometry = new SphereGeometry(
-        256, // radius - sphere´s radius
-        48, // widthSegments - number of horizontal segments
-        48, // heightSegments - number of vertical segments
-        0, // phiStart - specify horizontal starting angle
-        2 * Math.PI, // phiLength - specify horizontal sweep angle size
-        0, // thetaStart - specify vercial starting angle
-        Math.PI // thetaLength - specify vertical sweep angle
-      );
+              touches = [];
+            };
 
-      this.movieMaterial = new MeshBasicMaterial({
-        map: this.videoTexture,
-        overdraw: true,
-        side: BackSide
-      });
+            this.renderedCanvas.addEventListener('touchstart', iosCardboardTouchStart_);
+            this.renderedCanvas.addEventListener('touchend', iosCardboardTouchEnd_);
 
-      for (let i = 0; i < this.movieGeometry.faceVertexUvs[0].length; i++) {
-        const uvs = this.movieGeometry.faceVertexUvs[0][i];
-        const face = this.movieGeometry.faces[i];
+            this.iosRevertTouchToClick_ = () => {
+              this.renderedCanvas.removeEventListener('touchstart', iosCardboardTouchStart_);
+              this.renderedCanvas.removeEventListener('touchend', iosCardboardTouchEnd_);
+              this.iosRevertTouchToClick_ = null;
+            };
+          });
+        }
 
-        for (let j = 0; j < 3; j++) {
-          const x = face.vertexNormals[j].x;
-          const y = face.vertexNormals[j].y;
-          const z = face.vertexNormals[j].z;
+        handleVrDisplayDeactivate_() {
+          if (!this.vrDisplay || !this.vrDisplay.isPresenting) {
+            return;
+          }
+          if (this.iosRevertTouchToClick_) {
+            this.iosRevertTouchToClick_();
+          }
+          this.vrDisplay.exitPresent();
 
-          // Hemispherical fish-eye:
+        }
 
-          // uvs[j].x = (x + 1) / 2;
-          // uvs[j].y = (z + 1) / 2;
+        requestAnimationFrame(fn) {
+          if (this.vrDisplay) {
+            return this.vrDisplay.requestAnimationFrame(fn);
+          }
 
-          // Angular fish-eyes:
+          return this.player_.requestAnimationFrame(fn);
+        }
 
-          const k = 0.0; // Fish-eye factor
-          // Equidistant:   k = 0
-          // Stereographic: k = 0.5
-          // Orthographic:  k = -1.0
-          // Equisolid:     k = -0.5
-          // Rectilinear:   k = 1.0
-          const theta_spherical = Math.acos(z); // Spherical angle
-          let rho = 0; // Radius
+        cancelAnimationFrame(id) {
+          if (this.vrDisplay) {
+            return this.vrDisplay.cancelAnimationFrame(id);
+          }
 
-          if (k >= -1 && k < 0) {
-            rho = (1 / k) * Math.sin(k * theta_spherical);
-          } else if (k == 0) {
-            rho = theta_spherical;
-          } else if (k > 0 && k <= 1) {
-            rho = (1 / k) * Math.tan(k * theta_spherical);
+          return this.player_.cancelAnimationFrame(id);
+        }
+
+        togglePlay_() {
+          if (this.player_.paused) {
+            this.player_.play();
           } else {
-            console.error('Illegal fish-eye factor!');
+            this.player_.pause();
+          }
+        }
+
+        animate_() {
+          if (!this.initialized_) {
+            return;
+          }
+          if (this.getVideoEl_().readyState === this.getVideoEl_().HAVE_ENOUGH_DATA) {
+            if (this.videoTexture) {
+              this.videoTexture.needsUpdate = true;
+            }
           }
 
-          rho = rho / Math.PI; // Interval correction
-          const theta_polar = Math.atan2(y, x); // Polar angle
+          this.controls3d.update();
+          if (this.omniController) {
+            this.omniController.update(this.camera);
+          }
+          this.effect.render(this.scene, this.camera);
 
-          // Convert to Cartesian coordinates
+          if (window.navigator.getGamepads) {
+            // Grab all gamepads
+            const gamepads = window.navigator.getGamepads();
 
-          uvs[j].x = (rho * Math.cos(theta_polar)) + 0.5;
-          uvs[j].y = (rho * Math.sin(theta_polar)) + 0.5;
-        }
-      }
+            for (let i = 0; i < gamepads.length; ++i) {
+              const gamepad = gamepads[i];
 
-      // this.movieGeometry.rotateX(-Math.PI / 2); // Floor mount
-      // this.movieGeometry.rotateX(Math.PI / 2);  // Ceiling mount
-      this.movieGeometry.rotateY(Math.PI); // Wall mount
-      this.movieGeometry.uvsNeedUpdate = true;
-      this.movieScreen = new Mesh(this.movieGeometry, this.movieMaterial);
-      this.scene.add(this.movieScreen);
-      this.scene.background = new Color(0x444444);
-    }
+              // Make sure gamepad is defined
+              // Only take input if state has changed since we checked last
+              if (!gamepad || !gamepad.timestamp || gamepad.timestamp === this.prevTimestamps_[i]) {
+                continue;
+              }
+              for (let j = 0; j < gamepad.buttons.length; ++j) {
+                if (gamepad.buttons[j].pressed) {
+                  this.togglePlay_();
+                  this.prevTimestamps_[i] = gamepad.timestamp;
+                  break;
+                }
+              }
+            }
+          }
+          this.camera.getWorldDirection(this.cameraVector);
 
-    this.currentProjection_ = projection;
-
-  }
-
-  triggerError_(errorObj) {
-    // strip any html content from the error message
-    // as it is not supported outside of videojs-errors
-    const div = document.createElement('div');
-
-    div.innerHTML = errors[errorObj.code].message;
-
-    const message = div.textContent || div.innerText || '';
-
-    this.player_.error({
-      code: errorObj.code,
-      message
-    });
-  }
-
-  log(...msgs) {
-    if (!this.options_.debug) {
-      return;
-    }
-
-    msgs.forEach((msg) => {
-      console.log('VR: ', msg);
-    });
-  }
-
-  handleVrDisplayActivate_() {
-    if (!this.vrDisplay) {
-      return;
-    }
-    this.vrDisplay.requestPresent([{source: this.renderedCanvas}]).then(() => {
-      // TODO: check this, as we don't seem to have cardboardUI_ (even check what's vrDisplay pointing to at this point - I think this is a real VR display on a VR device)
-      if (!this.vrDisplay.cardboardUI_ || !browser.IS_IOS) {
-        return;
-      }
-
-      // webvr-polyfill/cardboard ui only watches for click events
-      // to tell that the back arrow button is pressed during cardboard vr.
-      // but somewhere along the line these events are silenced with preventDefault
-      // but only on iOS, so we translate them ourselves here
-      let touches = [];
-      const iosCardboardTouchStart_ = (e) => {
-        for (let i = 0; i < e.touches.length; i++) {
-          touches.push(e.touches[i]);
-        }
-      };
-
-      const iosCardboardTouchEnd_ = (e) => {
-        if (!touches.length) {
-          return;
+          this.animationFrameId_ = this.requestAnimationFrame(this.animate_);
         }
 
-        touches.forEach((t) => {
-          const simulatedClick = new window.MouseEvent('click', {
-            screenX: t.screenX,
-            screenY: t.screenY,
-            clientX: t.clientX,
-            clientY: t.clientY
+        handleResize_() {
+          const width = $fp_player.width();
+          const height = $fp_player.height();
+
+          this.effect.setSize(width, height, false);
+          this.camera.aspect = width / height;
+          this.camera.updateProjectionMatrix();
+        }
+
+        setProjection(projection) {
+
+          if (!utils.getInternalProjectionName(projection)) {
+            console.error('flowplayer-vr: please pass a valid projection ' + utils.validProjections.join(', '));
+            return;
+          }
+
+          this.currentProjection_ = projection;
+          this.defaultProjection_ = projection;
+        }
+
+        init() {
+          this.reset();
+
+          this.camera = new THREE.PerspectiveCamera(75, $fp_player.width() / $fp_player.height(), 1, 1000);
+          // Store vector representing the direction in which the camera is looking, in world space.
+          this.cameraVector = new THREE.Vector3();
+
+          if (this.currentProjection_ === '360_LR' || this.currentProjection_ === '360_TB' || this.currentProjection_ === '180' || this.currentProjection_ === '180_LR' || this.currentProjection_ === '180_MONO' || this.currentProjection_ === 'EAC_LR') {
+            // Render left eye when not in VR mode
+            this.camera.layers.enable(1);
+          }
+
+          this.scene = new THREE.Scene();
+          this.videoTexture = new THREE.VideoTexture(this.getVideoEl_());
+
+          // shared regardless of wether VideoTexture is used or
+          // an image canvas is used
+          this.videoTexture.generateMipmaps = false;
+          this.videoTexture.minFilter = THREE.LinearFilter;
+          this.videoTexture.magFilter = THREE.LinearFilter;
+          this.videoTexture.format = THREE.RGBFormat;
+
+          this.changeProjection_(this.currentProjection_);
+
+          if (this.currentProjection_ === 'NONE') {
+            this.log('Projection is NONE, dont init');
+            this.reset();
+            return;
+          }
+
+          // TODO: remove and add big play button to flowplayer
+          /*this.player_.removeChild('BigPlayButton');
+          this.player_.addChild('BigVrPlayButton', {}, this.bigPlayButtonIndex_);
+          this.player_.bigPlayButton = this.player_.getChild('BigVrPlayButton');*/
+
+          // mobile devices, or cardboard forced to on
+          if (this.options_.forceCardboard ||
+            browser.IS_ANDROID ||
+            browser.IS_IOS) {
+            this.addCardboardButton_();
+          }
+
+          // if ios remove full screen toggle
+          // TODO: convert to flowplayer
+          /*if (browser.IS_IOS && this.player_.controlBar && this.player_.controlBar.fullscreenToggle) {
+            this.player_.controlBar.fullscreenToggle.hide();
+          }*/
+
+          this.camera.position.set(0, 0, 0);
+          this.renderer = new THREE.WebGLRenderer({
+            devicePixelRatio: window.devicePixelRatio,
+            alpha: false,
+            clearColor: 0xffffff,
+            antialias: true
           });
 
-          this.renderedCanvas.dispatchEvent(simulatedClick);
-        });
+          const webglContext = this.renderer.getContext('webgl');
+          const oldTexImage2D = webglContext.texImage2D;
 
-        touches = [];
-      };
-
-      this.renderedCanvas.addEventListener('touchstart', iosCardboardTouchStart_);
-      this.renderedCanvas.addEventListener('touchend', iosCardboardTouchEnd_);
-
-      this.iosRevertTouchToClick_ = () => {
-        this.renderedCanvas.removeEventListener('touchstart', iosCardboardTouchStart_);
-        this.renderedCanvas.removeEventListener('touchend', iosCardboardTouchEnd_);
-        this.iosRevertTouchToClick_ = null;
-      };
-    });
-  }
-
-  handleVrDisplayDeactivate_() {
-    if (!this.vrDisplay || !this.vrDisplay.isPresenting) {
-      return;
-    }
-    if (this.iosRevertTouchToClick_) {
-      this.iosRevertTouchToClick_();
-    }
-    this.vrDisplay.exitPresent();
-
-  }
-
-  requestAnimationFrame(fn) {
-    if (this.vrDisplay) {
-      return this.vrDisplay.requestAnimationFrame(fn);
-    }
-
-    return this.player_.requestAnimationFrame(fn);
-  }
-
-  cancelAnimationFrame(id) {
-    if (this.vrDisplay) {
-      return this.vrDisplay.cancelAnimationFrame(id);
-    }
-
-    return this.player_.cancelAnimationFrame(id);
-  }
-
-  togglePlay_() {
-    if (this.player_.paused) {
-      this.player_.play();
-    } else {
-      this.player_.pause();
-    }
-  }
-
-  animate_() {
-    if (!this.initialized_) {
-      return;
-    }
-    if (this.getVideoEl_().readyState === this.getVideoEl_().HAVE_ENOUGH_DATA) {
-      if (this.videoTexture) {
-        this.videoTexture.needsUpdate = true;
-      }
-    }
-
-    this.controls3d.update();
-    if (this.omniController) {
-      this.omniController.update(this.camera);
-    }
-    this.effect.render(this.scene, this.camera);
-
-    if (window.navigator.getGamepads) {
-      // Grab all gamepads
-      const gamepads = window.navigator.getGamepads();
-
-      for (let i = 0; i < gamepads.length; ++i) {
-        const gamepad = gamepads[i];
-
-        // Make sure gamepad is defined
-        // Only take input if state has changed since we checked last
-        if (!gamepad || !gamepad.timestamp || gamepad.timestamp === this.prevTimestamps_[i]) {
-          continue;
-        }
-        for (let j = 0; j < gamepad.buttons.length; ++j) {
-          if (gamepad.buttons[j].pressed) {
-            this.togglePlay_();
-            this.prevTimestamps_[i] = gamepad.timestamp;
-            break;
-          }
-        }
-      }
-    }
-    this.camera.getWorldDirection(this.cameraVector);
-
-    this.animationFrameId_ = this.requestAnimationFrame(this.animate_);
-  }
-
-  handleResize_() {
-    const width = $fp_player.width();
-    const height = $fp_player.height();
-
-    this.effect.setSize(width, height, false);
-    this.camera.aspect = width / height;
-    this.camera.updateProjectionMatrix();
-  }
-
-  setProjection(projection) {
-
-    if (!utils.getInternalProjectionName(projection)) {
-      console.error('flowplayer-vr: please pass a valid projection ' + utils.validProjections.join(', '));
-      return;
-    }
-
-    this.currentProjection_ = projection;
-    this.defaultProjection_ = projection;
-  }
-
-  init() {
-    this.reset();
-
-    this.camera = new THREE.PerspectiveCamera(75, $fp_player.width() / $fp_player.height(), 1, 1000);
-    // Store vector representing the direction in which the camera is looking, in world space.
-    this.cameraVector = new THREE.Vector3();
-
-    if (this.currentProjection_ === '360_LR' || this.currentProjection_ === '360_TB' || this.currentProjection_ === '180' || this.currentProjection_ === '180_LR' || this.currentProjection_ === '180_MONO' || this.currentProjection_ === 'EAC_LR') {
-      // Render left eye when not in VR mode
-      this.camera.layers.enable(1);
-    }
-
-    this.scene = new THREE.Scene();
-    this.videoTexture = new THREE.VideoTexture(this.getVideoEl_());
-
-    // shared regardless of wether VideoTexture is used or
-    // an image canvas is used
-    this.videoTexture.generateMipmaps = false;
-    this.videoTexture.minFilter = THREE.LinearFilter;
-    this.videoTexture.magFilter = THREE.LinearFilter;
-    this.videoTexture.format = THREE.RGBFormat;
-
-    this.changeProjection_(this.currentProjection_);
-
-    if (this.currentProjection_ === 'NONE') {
-      this.log('Projection is NONE, dont init');
-      this.reset();
-      return;
-    }
-
-    // TODO: remove and add big play button to flowplayer
-    /*this.player_.removeChild('BigPlayButton');
-    this.player_.addChild('BigVrPlayButton', {}, this.bigPlayButtonIndex_);
-    this.player_.bigPlayButton = this.player_.getChild('BigVrPlayButton');*/
-
-    // mobile devices, or cardboard forced to on
-    if (this.options_.forceCardboard ||
-        browser.IS_ANDROID ||
-        browser.IS_IOS) {
-      this.addCardboardButton_();
-    }
-
-    // if ios remove full screen toggle
-    // TODO: convert to flowplayer
-    /*if (browser.IS_IOS && this.player_.controlBar && this.player_.controlBar.fullscreenToggle) {
-      this.player_.controlBar.fullscreenToggle.hide();
-    }*/
-
-    this.camera.position.set(0, 0, 0);
-    this.renderer = new THREE.WebGLRenderer({
-      devicePixelRatio: window.devicePixelRatio,
-      alpha: false,
-      clearColor: 0xffffff,
-      antialias: true
-    });
-
-    const webglContext = this.renderer.getContext('webgl');
-    const oldTexImage2D = webglContext.texImage2D;
-
-    /* this is a workaround since threejs uses try catch */
-    webglContext.texImage2D = (...args) => {
-      try {
-        return oldTexImage2D.apply(webglContext, args);
-      } catch (e) {
-        this.reset();
-        this.player_.pause();
-        this.triggerError_({code: 'web-vr-hls-cors-not-supported', dismiss: false});
-        throw new Error(e);
-      }
-    };
-
-    this.renderer.setSize($fp_player.width(), $fp_player.height(), false);
-    this.effect = new VREffect(this.renderer);
-
-    this.effect.setSize($fp_player.width(), $fp_player.height(), false);
-    this.vrDisplay = null;
-
-    // Previous timestamps for gamepad updates
-    this.prevTimestamps_ = [];
-
-    this.renderedCanvas = this.renderer.domElement;
-    this.renderedCanvas.setAttribute('style', 'width: 100%; height: 100%; position: absolute; top:0;');
-
-    const videoElement = root.find('video');
-    const videoElStyle = videoElement[0].style;
-
-    videoElement.insertBefore(this.renderedCanvas);
-    videoElStyle.zIndex = '-1';
-    videoElStyle.opacity = '0';
-
-    if (window.navigator.getVRDisplays) {
-      this.log('is supported, getting vr displays');
-      window.navigator.getVRDisplays().then((displays) => {
-        if (displays.length > 0) {
-          this.log('Displays found', displays);
-          this.vrDisplay = displays[0];
-
-          // Native WebVR Head Mounted Displays (HMDs) like the HTC Vive
-          // also need the cardboard button to enter fully immersive mode
-          // so, we want to add the button if we're not polyfilled.
-          if (!this.vrDisplay.isPolyfilled) {
-            this.log('Real HMD found using VRControls', this.vrDisplay);
-            this.addCardboardButton_();
-
-            // We use VRControls here since we are working with an HMD
-            // and we only want orientation controls.
-            this.controls3d = new VRControls(this.camera);
-          }
-        }
-
-        if (!this.controls3d) {
-          this.log('no HMD found Using Orbit & Orientation Controls');
-          const options = {
-            camera: this.camera,
-            canvas: this.renderedCanvas,
-            // check if its a half sphere view projection
-            halfView: this.currentProjection_.indexOf('180') === 0,
-            orientation: browser.IS_IOS || browser.IS_ANDROID || false
+          /* this is a workaround since threejs uses try catch */
+          webglContext.texImage2D = (...args) => {
+            try {
+              return oldTexImage2D.apply(webglContext, args);
+            } catch (e) {
+              this.reset();
+              this.player_.pause();
+              this.triggerError_({code: 'web-vr-hls-cors-not-supported', dismiss: false});
+              throw new Error(e);
+            }
           };
 
-          if (this.options_.motionControls === false) {
-            options.orientation = false;
+          this.renderer.setSize($fp_player.width(), $fp_player.height(), false);
+          this.effect = new VREffect(this.renderer);
+
+          this.effect.setSize($fp_player.width(), $fp_player.height(), false);
+          this.vrDisplay = null;
+
+          // Previous timestamps for gamepad updates
+          this.prevTimestamps_ = [];
+
+          this.renderedCanvas = this.renderer.domElement;
+          this.renderedCanvas.setAttribute('style', 'width: 100%; height: 100%; position: absolute; top:0;');
+
+          const videoElement = root.find('video');
+          const videoElStyle = videoElement[0].style;
+
+          videoElement.insertBefore(this.renderedCanvas);
+          videoElStyle.zIndex = '-1';
+          videoElStyle.opacity = '0';
+
+          if (window.navigator.getVRDisplays) {
+            this.log('is supported, getting vr displays');
+            window.navigator.getVRDisplays().then((displays) => {
+              if (displays.length > 0) {
+                this.log('Displays found', displays);
+                this.vrDisplay = displays[0];
+
+                // Native WebVR Head Mounted Displays (HMDs) like the HTC Vive
+                // also need the cardboard button to enter fully immersive mode
+                // so, we want to add the button if we're not polyfilled.
+                if (!this.vrDisplay.isPolyfilled) {
+                  this.log('Real HMD found using VRControls', this.vrDisplay);
+                  this.addCardboardButton_();
+
+                  // We use VRControls here since we are working with an HMD
+                  // and we only want orientation controls.
+                  this.controls3d = new VRControls(this.camera);
+                }
+              }
+
+              if (!this.controls3d) {
+                this.log('no HMD found Using Orbit & Orientation Controls');
+                const options = {
+                  camera: this.camera,
+                  canvas: this.renderedCanvas,
+                  // check if its a half sphere view projection
+                  halfView: this.currentProjection_.indexOf('180') === 0,
+                  orientation: browser.IS_IOS || browser.IS_ANDROID || false
+                };
+
+                if (this.options_.motionControls === false) {
+                  options.orientation = false;
+                }
+
+                this.controls3d = new OrbitOrientationContols(options);
+                this.canvasPlayerControls = new CanvasPlayerControls(this.player_, this.renderedCanvas);
+              }
+
+              this.animationFrameId_ = this.requestAnimationFrame(this.animate_);
+            });
+          } else if (window.navigator.getVRDevices) {
+            this.triggerError_({code: 'web-vr-out-of-date', dismiss: false});
+          } else {
+            this.triggerError_({code: 'web-vr-not-supported', dismiss: false});
           }
 
-          this.controls3d = new OrbitOrientationContols(options);
-          this.canvasPlayerControls = new CanvasPlayerControls(this.player_, this.renderedCanvas);
+          if (this.options_.omnitone) {
+            const audiocontext = THREE.AudioContext.getContext();
+
+            this.omniController = new OmnitoneController(
+              audiocontext,
+              this.options_.omnitone, this.getVideoEl_(), this.options_.omnitoneOptions
+            );
+            this.omniController.one('audiocontext-suspended', () => {
+              this.player.pause();
+              api.one('playing', () => {
+                audiocontext.resume();
+              });
+            });
+          }
+
+          api.on('fullscreen', this.handleResize_);
+          window.addEventListener('vrdisplaypresentchange', this.handleResize_, true);
+          window.addEventListener('resize', this.handleResize_, true);
+          window.addEventListener('vrdisplayactivate', this.handleVrDisplayActivate_, true);
+          window.addEventListener('vrdisplaydeactivate', this.handleVrDisplayDeactivate_, true);
+
+          this.initialized_ = true;
+          //this.trigger('initialized');
         }
 
-        this.animationFrameId_ = this.requestAnimationFrame(this.animate_);
-      });
-    } else if (window.navigator.getVRDevices) {
-      this.triggerError_({code: 'web-vr-out-of-date', dismiss: false});
-    } else {
-      this.triggerError_({code: 'web-vr-not-supported', dismiss: false});
-    }
+        addCardboardButton_() {
+          // TODO: convert for flowplayer (add cardboard button)
+          /*if (!this.player_.controlBar.getChild('CardboardButton')) {
+            this.player_.controlBar.addChild('CardboardButton', {});
+          }*/
+        }
 
-    if (this.options_.omnitone) {
-      const audiocontext = THREE.AudioContext.getContext();
+        getVideoEl_() {
+          return root.find('video:first')[0];
+        }
 
-      this.omniController = new OmnitoneController(
-        audiocontext,
-        this.options_.omnitone, this.getVideoEl_(), this.options_.omnitoneOptions
-      );
-      this.omniController.one('audiocontext-suspended', () => {
-        this.player.pause();
-        api.one('playing', () => {
-          audiocontext.resume();
-        });
-      });
-    }
+        reset() {
+          if (!this.initialized_) {
+            return;
+          }
 
-    api.on('fullscreen', this.handleResize_);
-    window.addEventListener('vrdisplaypresentchange', this.handleResize_, true);
-    window.addEventListener('resize', this.handleResize_, true);
-    window.addEventListener('vrdisplayactivate', this.handleVrDisplayActivate_, true);
-    window.addEventListener('vrdisplaydeactivate', this.handleVrDisplayDeactivate_, true);
+          if (this.omniController) {
+            this.omniController.off('audiocontext-suspended');
+            this.omniController.dispose();
+            this.omniController = undefined;
+          }
 
-    this.initialized_ = true;
-    //this.trigger('initialized');
-  }
+          if (this.controls3d) {
+            this.controls3d.dispose();
+            this.controls3d = null;
+          }
 
-  addCardboardButton_() {
-    // TODO: convert for flowplayer (add cardboard button)
-    /*if (!this.player_.controlBar.getChild('CardboardButton')) {
-      this.player_.controlBar.addChild('CardboardButton', {});
-    }*/
-  }
+          if (this.canvasPlayerControls) {
+            this.canvasPlayerControls.dispose();
+            this.canvasPlayerControls = null;
+          }
 
-  getVideoEl_() {
-    return root.find('video:first')[0];
-  }
+          if (this.effect) {
+            this.effect.dispose();
+            this.effect = null;
+          }
 
-  reset() {
-    if (!this.initialized_) {
-      return;
-    }
+          window.removeEventListener('resize', this.handleResize_, true);
+          window.removeEventListener('vrdisplaypresentchange', this.handleResize_, true);
+          window.removeEventListener('vrdisplayactivate', this.handleVrDisplayActivate_, true);
+          window.removeEventListener('vrdisplaydeactivate', this.handleVrDisplayDeactivate_, true);
 
-    if (this.omniController) {
-      this.omniController.off('audiocontext-suspended');
-      this.omniController.dispose();
-      this.omniController = undefined;
-    }
+          // TODO: convert these buttons for flowplayer
+          // re-add the big play button to player
+          /*if (!this.player_.getChild('BigPlayButton')) {
+            this.player_.addChild('BigPlayButton', {}, this.bigPlayButtonIndex_);
+          }
 
-    if (this.controls3d) {
-      this.controls3d.dispose();
-      this.controls3d = null;
-    }
+          if (this.player_.getChild('BigVrPlayButton')) {
+            this.player_.removeChild('BigVrPlayButton');
+          }*/
 
-    if (this.canvasPlayerControls) {
-      this.canvasPlayerControls.dispose();
-      this.canvasPlayerControls = null;
-    }
+          // TODO: convert to flowplayer
+          // remove the cardboard button
+          /*if (this.player_.getChild('CardboardButton')) {
+            this.player_.controlBar.removeChild('CardboardButton');
+          }*/
 
-    if (this.effect) {
-      this.effect.dispose();
-      this.effect = null;
-    }
+          // TODO: controlbar check for flowplayer
+          // show the fullscreen again
+          if (browser.IS_IOS/* && this.player_.controlBar && this.player_.controlBar.fullscreenToggle*/) {
+            // TODO: convert for flowplayer
+            //this.player_.controlBar.fullscreenToggle.show();
+          }
 
-    window.removeEventListener('resize', this.handleResize_, true);
-    window.removeEventListener('vrdisplaypresentchange', this.handleResize_, true);
-    window.removeEventListener('vrdisplayactivate', this.handleVrDisplayActivate_, true);
-    window.removeEventListener('vrdisplaydeactivate', this.handleVrDisplayDeactivate_, true);
+          // reset the video element style so that it will be displayed
+          const videoElStyle = this.getVideoEl_().style;
 
-    // TODO: convert these buttons for flowplayer
-    // re-add the big play button to player
-    /*if (!this.player_.getChild('BigPlayButton')) {
-      this.player_.addChild('BigPlayButton', {}, this.bigPlayButtonIndex_);
-    }
+          videoElStyle.zIndex = '';
+          videoElStyle.opacity = '';
 
-    if (this.player_.getChild('BigVrPlayButton')) {
-      this.player_.removeChild('BigVrPlayButton');
-    }*/
+          // set the current projection to the default
+          this.currentProjection_ = this.defaultProjection_;
 
-    // TODO: convert to flowplayer
-    // remove the cardboard button
-    /*if (this.player_.getChild('CardboardButton')) {
-      this.player_.controlBar.removeChild('CardboardButton');
-    }*/
+          // reset the ios touch to click workaround
+          if (this.iosRevertTouchToClick_) {
+            this.iosRevertTouchToClick_();
+          }
 
-    // TODO: controlbar check for flowplayer
-    // show the fullscreen again
-    if (browser.IS_IOS/* && this.player_.controlBar && this.player_.controlBar.fullscreenToggle*/) {
-      // TODO: convert for flowplayer
-      //this.player_.controlBar.fullscreenToggle.show();
-    }
+          // remove the old canvas
+          if (this.renderedCanvas) {
+            this.renderedCanvas.parentNode.removeChild(this.renderedCanvas);
+          }
 
-    // reset the video element style so that it will be displayed
-    const videoElStyle = this.getVideoEl_().style;
+          if (this.animationFrameId_) {
+            this.cancelAnimationFrame(this.animationFrameId_);
+          }
 
-    videoElStyle.zIndex = '';
-    videoElStyle.opacity = '';
+          this.initialized_ = false;
+        }
 
-    // set the current projection to the default
-    this.currentProjection_ = this.defaultProjection_;
+        dispose() {
+          this.reset();
+        }
 
-    // reset the ios touch to click workaround
-    if (this.iosRevertTouchToClick_) {
-      this.iosRevertTouchToClick_();
-    }
+        polyfillVersion() {
+          return WebVRPolyfill.version;
+        }
+      }
 
-    // remove the old canvas
-    if (this.renderedCanvas) {
-      this.renderedCanvas.parentNode.removeChild(this.renderedCanvas);
-    }
-
-    if (this.animationFrameId_) {
-      this.cancelAnimationFrame(this.animationFrameId_);
-    }
-
-    this.initialized_ = false;
-  }
-
-  dispose() {
-    this.reset();
-  }
-
-  polyfillVersion() {
-    return WebVRPolyfill.version;
-  }
-}
-
-VR.prototype.setTimeout = window.setTimeout;
-VR.prototype.clearTimeout = window.clearTimeout;
+      VR.prototype.setTimeout = window.setTimeout;
+      VR.prototype.clearTimeout = window.clearTimeout;
 
 //VR.VERSION = VERSION;
 
-api.on('load', function() {
-  new VR(root, {
-    'projection' : '360'
-  });
+      api.on('load', function () {
+        new VR(root, {
+          'projection': '360'
+        });
+      });
+    });
+  }
 });
 
-export default VR;
+//export default VR;
