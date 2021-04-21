@@ -41,15 +41,14 @@ jQuery( function($) {
         constructor(player, options) {
           this.options_ = options;
           this.player_ = player;
+          this.video_element = null;
 
           // IE 11 does not support enough webgl to be supported
           // older safari does not support cors, so it wont work
           if (browser.IE_VERSION || !utils.corsSupport) {
             // if a player triggers error before 'loadstart' is fired
             // video.js will reset the error overlay
-            api.on('ready', () => {
-              this.triggerError_({code: 'web-vr-not-supported', dismiss: false});
-            });
+            this.triggerError_({code: 'web-vr-not-supported', dismiss: false});
             return;
           }
 
@@ -83,7 +82,6 @@ jQuery( function($) {
           }), 1);*/
 
           //this.on(player, 'loadedmetadata', this.init);
-          console.log('VR init (debug test - please remove this line once the module is stable)');
           this.log('VR init');
         }
 
@@ -585,12 +583,23 @@ void main() {
 
         }
 
+        supportsRaf() {
+          return typeof window.requestAnimationFrame === 'function' && typeof window.cancelAnimationFrame === 'function';
+        }
+
         requestAnimationFrame(fn) {
           if (this.vrDisplay) {
             return this.vrDisplay.requestAnimationFrame(fn);
           }
 
-          return this.player_.requestAnimationFrame(fn);
+          if ( this.supportsRaf() ) {
+            return window.requestAnimationFrame(() => {
+              fn();
+            });
+          } else {
+            // TODO: store timeouts and stop them when changing player instance
+            return window.setTimeout(fn, 1000 / 60);
+          }
         }
 
         cancelAnimationFrame(id) {
@@ -610,7 +619,7 @@ void main() {
         }
 
         animate_() {
-          if (!this.initialized_) {
+          if (!this.initialized_ || typeof( this.getVideoEl_() ) === 'undefined') {
             return;
           }
           if (this.getVideoEl_().readyState === this.getVideoEl_().HAVE_ENOUGH_DATA) {
@@ -757,7 +766,7 @@ void main() {
           const videoElement = root.find('video');
           const videoElStyle = videoElement[0].style;
 
-          videoElement.insertBefore(this.renderedCanvas);
+          videoElement.before(this.renderedCanvas);
           videoElStyle.zIndex = '-1';
           videoElStyle.opacity = '0';
 
@@ -815,7 +824,7 @@ void main() {
               this.options_.omnitone, this.getVideoEl_(), this.options_.omnitoneOptions
             );
             this.omniController.one('audiocontext-suspended', () => {
-              this.player.pause();
+              api.pause();
               api.one('playing', () => {
                 audiocontext.resume();
               });
@@ -840,7 +849,16 @@ void main() {
         }
 
         getVideoEl_() {
-          return root.find('video:first')[0];
+          // try to find and cache the video element if on page,
+          // reset to NULL if not found yet (i.e. player not yet in "ready" state)
+          if ( this.video_element === null ) {
+            this.video_element = root.find('video:first')[0];
+            if ( typeof(this.video_element) === 'undefined' ) {
+              this.video_element = null;
+            }
+          }
+
+          return this.video_element;
         }
 
         reset() {
@@ -937,10 +955,10 @@ void main() {
 
 //VR.VERSION = VERSION;
 
-      api.on('load', function () {
+      api.on('ready', function () {
         new VR(root, {
           'projection': '360'
-        });
+        }).init();
       });
     });
   }
