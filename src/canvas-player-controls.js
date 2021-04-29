@@ -12,11 +12,12 @@ import EventTarget from './event-target';
  *    show the control bar. Moving around the scene in the canvas should not.
  */
 class CanvasPlayerControls extends EventTarget {
-  constructor(player, canvas) {
+  constructor(player, canvas, api) {
     super();
 
     this.player = player;
     this.canvas = canvas;
+    this.api = api;
 
     this.onMoveEnd = this.onMoveEnd.bind(this);
     this.onMoveStart = this.onMoveStart.bind(this);
@@ -53,10 +54,10 @@ class CanvasPlayerControls extends EventTarget {
   }
 
   togglePlay() {
-    if (this.player.paused) {
-      this.player.play();
+    if (this.api.paused) {
+      this.api.play();
     } else {
-      this.player.pause();
+      this.api.pause();
     }
   }
 

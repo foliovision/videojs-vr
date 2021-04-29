@@ -41,6 +41,7 @@ jQuery( function($) {
         constructor(player, options) {
           this.options_ = options;
           this.player_ = player;
+          this.api_ = api;
           this.video_element = null;
 
           // IE 11 does not support enough webgl to be supported
@@ -611,10 +612,10 @@ void main() {
         }
 
         togglePlay_() {
-          if (this.player_.paused) {
-            this.player_.play();
+          if (this.api_.paused) {
+            api_.play();
           } else {
-            this.player_.pause();
+            api_.pause();
           }
         }
 
@@ -806,7 +807,7 @@ void main() {
                 }
 
                 this.controls3d = new OrbitOrientationContols(options);
-                this.canvasPlayerControls = new CanvasPlayerControls(this.player_, this.renderedCanvas);
+                this.canvasPlayerControls = new CanvasPlayerControls(this.player_, this.renderedCanvas, this.api_);
               }
 
               this.animationFrameId_ = this.requestAnimationFrame(this.animate_);
@@ -958,7 +959,8 @@ void main() {
 
       api.on('ready', function () {
         new VR(root, {
-          'projection': '360'
+          'projection': '360',
+          'sphereDetail' : 128
         }).init();
       });
     });
