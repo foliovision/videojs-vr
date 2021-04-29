@@ -762,6 +762,7 @@ void main() {
 
           this.renderedCanvas = this.renderer.domElement;
           this.renderedCanvas.setAttribute('style', 'width: 100%; height: 100%; position: absolute; top:0;');
+          this.renderedCanvas.setAttribute('class', 'fp-vr-renderer');
 
           const videoElement = root.find('video');
           const videoElStyle = videoElement[0].style;
