@@ -26,7 +26,12 @@ const errors = {
     headline: '360 HLS video not supported on this device',
     type: '360_NOT_SUPPORTED',
     message: "Your browser/device does not support HLS 360 video. See <a href='http://webvr.info'>http://webvr.info</a> for assistance."
-  }
+  },
+  'web-vr-video-not-found': {
+    headline: '360 video element not found',
+    type: '360_VIDEO_NOT_FOUND',
+    message: "The 3D video did not load correctly. Please try to reload the page."
+  },
 };
 
 jQuery( function($) {
@@ -766,6 +771,12 @@ void main() {
           this.renderedCanvas.setAttribute('class', 'fp-vr-renderer');
 
           const videoElement = root.find('video');
+
+          if ( !videoElement.length ) {
+            this.triggerError_({code: 'web-vr-video-not-found', dismiss: false});
+            throw new Error('web-vr-video-not-found');
+          }
+
           const videoElStyle = videoElement[0].style;
 
           videoElement.before(this.renderedCanvas);
