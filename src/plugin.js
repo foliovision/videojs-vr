@@ -613,7 +613,7 @@ void main() {
             return this.vrDisplay.cancelAnimationFrame(id);
           }
 
-          return this.player_.cancelAnimationFrame(id);
+          return window.cancelAnimationFrame(id);
         }
 
         togglePlay_() {
@@ -751,7 +751,7 @@ void main() {
               return oldTexImage2D.apply(webglContext, args);
             } catch (e) {
               this.reset();
-              this.player_.pause();
+              api.pause();
               this.triggerError_({code: 'web-vr-hls-cors-not-supported', dismiss: false});
               throw new Error(e);
             }
