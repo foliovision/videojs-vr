@@ -41,6 +41,10 @@ jQuery( function($) {
       root = jQuery(root);
       const $fp_player = root.find('.fp-player');
 
+      if ( root.data('item')['vr'] == true ) {
+        root.addClass('is-vr');
+      }
+
       class VR {
 
         constructor(player, options) {
@@ -103,17 +107,7 @@ jQuery( function($) {
           if (this.scene) {
             this.scene.remove(this.movieScreen);
           }
-          if (projection === 'AUTO') {
-            // mediainfo cannot be set to auto or we would infinite loop here
-            // each source should know wether they are 360 or not, if using AUTO
-            // TODO: convert for flowplayer
-            /*if (this.player_.mediainfo && this.player_.mediainfo.projection && this.player_.mediainfo.projection !== 'AUTO') {
-              const autoProjection = utils.getInternalProjectionName(this.player_.mediainfo.projection);
-
-              return this.changeProjection_(autoProjection);
-            }*/
-            return this.changeProjection_('NONE');
-          } else if (projection === '360') {
+          if (projection === '360') {
             this.movieGeometry = new THREE.SphereBufferGeometry(256, this.options_.sphereDetail, this.options_.sphereDetail);
             this.movieMaterial = new THREE.MeshBasicMaterial({
               map: this.videoTexture,
@@ -969,10 +963,13 @@ void main() {
 //VR.VERSION = VERSION;
 
       api.on('ready', function () {
-        new VR(root, {
-          'projection': '360',
-          'sphereDetail' : 128
-        }).init();
+        if ( root.data('item')['vr'] == true ) {
+          let vr_data = root.data('item')['vrvideo'];
+          new VR(root, {
+            'projection': (vr_data.projection ? vr_data.projection : '360'),
+            'sphereDetail' : 128
+          }).init();
+        }
       });
     });
   }

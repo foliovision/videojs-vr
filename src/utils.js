@@ -35,7 +35,6 @@ export const validProjections = [
   'EAC',
   'EAC_LR',
   'NONE',
-  'AUTO',
   'Sphere',
   'Cube',
   'equirectangular',
