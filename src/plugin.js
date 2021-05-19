@@ -428,7 +428,7 @@ void main() {
             }
           } else if (projection === 'FISHEYE') {
 
-            this.movieGeometry = new SphereGeometry(
+            this.movieGeometry = new THREE.SphereGeometry(
               256, // radius - sphere´s radius
               48, // widthSegments - number of horizontal segments
               48, // heightSegments - number of vertical segments
@@ -438,10 +438,10 @@ void main() {
               Math.PI // thetaLength - specify vertical sweep angle
             );
 
-            this.movieMaterial = new MeshBasicMaterial({
+            this.movieMaterial = new THREE.MeshBasicMaterial({
               map: this.videoTexture,
               overdraw: true,
-              side: BackSide
+              side: THREE.BackSide
             });
 
             for (let i = 0; i < this.movieGeometry.faceVertexUvs[0].length; i++) {
@@ -493,9 +493,9 @@ void main() {
             // this.movieGeometry.rotateX(Math.PI / 2);  // Ceiling mount
             this.movieGeometry.rotateY(Math.PI); // Wall mount
             this.movieGeometry.uvsNeedUpdate = true;
-            this.movieScreen = new Mesh(this.movieGeometry, this.movieMaterial);
+            this.movieScreen = new THREE.Mesh(this.movieGeometry, this.movieMaterial);
             this.scene.add(this.movieScreen);
-            this.scene.background = new Color(0x444444);
+            this.scene.background = new THREE.Color(0x444444);
           }
 
           this.currentProjection_ = projection;
