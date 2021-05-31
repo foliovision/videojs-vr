@@ -492,7 +492,7 @@ void main() {
             this.scene.background = new THREE.Color(0x444444);
           }
 
-          this.currentProjection_ = projection;
+          this.currentProjection_ = projection.toUpperCase();
 
         }
 
@@ -676,8 +676,8 @@ void main() {
             return;
           }
 
-          this.currentProjection_ = projection;
-          this.defaultProjection_ = projection;
+          this.currentProjection_ = projection.toUpperCase();
+          this.defaultProjection_ = projection.toUpperCase();
         }
 
         init() {
@@ -929,7 +929,7 @@ void main() {
           videoElStyle.opacity = '';
 
           // set the current projection to the default
-          this.currentProjection_ = this.defaultProjection_;
+          this.currentProjection_ = this.defaultProjection_.toUpperCase();
 
           // reset the ios touch to click workaround
           if (this.iosRevertTouchToClick_) {
