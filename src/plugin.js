@@ -471,6 +471,7 @@ void main() {
                   rho = (1 / k) * Math.tan(k * theta_spherical);
                 } else {
                   console.error('Illegal fish-eye factor!');
+                  rho = theta_spherical;
                 }
 
                 rho = rho / Math.PI; // Interval correction
