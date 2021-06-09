@@ -999,20 +999,20 @@ void main() {
           vr_object.init();
         }
       });
-    });
 
-    $(document).one('click', '.fp-ui', function() {
-      if ( browser.IS_IOS && root.data('item')['vr'] == true ) {
-        try {
-          DeviceMotionEvent.requestPermission().then(response => {
-            if (response == 'granted') {
-              window.addEventListener('devicemotion', (e) => {});
-            }
-          }).catch(ex => console.log('error requesting sensors permission: ', ex));
-        } catch (ex) {
-          console.log('error requesting sensors permission (eval error): ', ex);
+      $(document).one('click', '.fp-ui', function() {
+        if ( browser.IS_IOS && root.data('item')['vr'] == true ) {
+          try {
+            DeviceMotionEvent.requestPermission().then(response => {
+              if (response == 'granted') {
+                window.addEventListener('devicemotion', (e) => {});
+              }
+            }).catch(ex => console.log('error requesting sensors permission: ', ex));
+          } catch (ex) {
+            console.log('error requesting sensors permission (eval error): ', ex);
+          }
         }
-      }
+      });
     });
   }
 });
