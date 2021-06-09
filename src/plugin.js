@@ -260,33 +260,35 @@ jQuery( function($) {
             this.movieScreen.layers.set(1);
             this.scene.add(this.movieScreen);
 
-            // Right eye view
-            geometry = new THREE.SphereGeometry(
-              256,
-              this.options_.sphereDetail,
-              this.options_.sphereDetail,
-              Math.PI,
-              Math.PI
-            );
-            geometry.scale(-1, 1, 1);
-            uvs = geometry.faceVertexUvs[0];
+            if (projection !== '180_MONO') {
+              // Right eye view
+              geometry = new THREE.SphereGeometry(
+                256,
+                this.options_.sphereDetail,
+                this.options_.sphereDetail,
+                Math.PI,
+                Math.PI
+              );
+              geometry.scale(-1, 1, 1);
+              uvs = geometry.faceVertexUvs[0];
 
-            for (let i = 0; i < uvs.length; i++) {
-              for (let j = 0; j < 3; j++) {
-                uvs[i][j].x *= 0.5;
-                uvs[i][j].x += 0.5;
+              for (let i = 0; i < uvs.length; i++) {
+                for (let j = 0; j < 3; j++) {
+                  uvs[i][j].x *= 0.5;
+                  uvs[i][j].x += 0.5;
+                }
               }
-            }
 
-            this.movieGeometry = new THREE.BufferGeometry().fromGeometry(geometry);
-            this.movieMaterial = new THREE.MeshBasicMaterial({
-              map: this.videoTexture,
-              overdraw: true
-            });
-            this.movieScreen = new THREE.Mesh(this.movieGeometry, this.movieMaterial);
-            // display in right eye only
-            this.movieScreen.layers.set(2);
-            this.scene.add(this.movieScreen);
+              this.movieGeometry = new THREE.BufferGeometry().fromGeometry(geometry);
+              this.movieMaterial = new THREE.MeshBasicMaterial({
+                map: this.videoTexture,
+                overdraw: true
+              });
+              this.movieScreen = new THREE.Mesh(this.movieGeometry, this.movieMaterial);
+              // display in right eye only
+              this.movieScreen.layers.set(2);
+              this.scene.add(this.movieScreen);
+            }
           } else if (projection === 'EAC' || projection === 'EAC_LR') {
             const makeScreen = (mapMatrix, scaleMatrix) => {
               // "Continuity correction?": because of discontinuous faces and aliasing,
