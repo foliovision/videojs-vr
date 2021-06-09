@@ -967,11 +967,36 @@ void main() {
 
       api.on('ready', function () {
         if ( root.data('item')['vr'] == true ) {
-          let vr_data = root.data('item')['vrvideo'];
-          new VR(root, {
-            'projection': (vr_data.projection ? vr_data.projection : '360'),
-            'sphereDetail' : 128
-          }).init();
+          let player_id = root.attr('id');
+
+          // unload all other VR players and reset their VR data
+          // so only 1 VR is only ever on screen and eating the processing power
+          $('.flowplayer[data-flowplayer-instance-id]').each( function() {
+            if ( this.id != player_id ) {
+              let
+                $player_el = $(this),
+                player = $player_el.data('flowplayer');
+
+              if (player && player.ready) {
+                // reset VR
+                if ( $player_el.data('vr') ) {
+                  $player_el.data('vr').reset();
+                  $player_el.removeData('vr');
+                }
+                player.unload();
+              }
+            }
+          });
+
+          let
+            vr_data = root.data('item')['vrvideo'],
+            vr_object = new VR(root, {
+              'projection': (vr_data.projection ? vr_data.projection : '360'),
+              'sphereDetail' : 128
+            });
+
+          root.data( 'vr', vr_object );
+          vr_object.init();
         }
       });
     });
