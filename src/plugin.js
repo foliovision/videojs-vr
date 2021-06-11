@@ -962,7 +962,7 @@ void main() {
 //VR.VERSION = VERSION;
 
       api.on('ready', function () {
-        root.addClass('is-vr', api.video.vr);
+        root.toggleClass('is-vr', api.video.vr);
 
         if (api.video.vr) {
           let
@@ -978,7 +978,7 @@ void main() {
       });
 
       $(document).one('click', '.fp-ui', function() {
-        if ( browser.IS_IOS && api.video.vr == true ) {
+        if ( browser.IS_IOS && ( ( typeof( api.conf.clip ) != 'undefined' && api.conf.clip.vr ) || ( typeof( api.conf.playlist[0] ) != 'undefined' && api.conf.playlist[0].vr ) ) ) {
           try {
             DeviceMotionEvent.requestPermission().then(response => {
               if (response == 'granted') {
