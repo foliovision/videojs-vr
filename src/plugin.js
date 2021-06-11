@@ -41,10 +41,6 @@ jQuery( function($) {
       root = jQuery(root);
       const $fp_player = root.find('.fp-player');
 
-      if ( root.data('item')['vr'] == true ) {
-        root.addClass('is-vr');
-      }
-
       class VR {
 
         constructor(player, options) {
@@ -966,7 +962,9 @@ void main() {
 //VR.VERSION = VERSION;
 
       api.on('ready', function () {
-        if ( root.data('item')['vr'] == true ) {
+        root.toggleClass('is-vr', api.video.vr);
+
+	      if (api.video.vr) {
           let player_id = root.attr('id');
 
           // unload all other VR players and reset their VR data
