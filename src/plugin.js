@@ -41,10 +41,6 @@ jQuery( function($) {
       root = jQuery(root);
       const $fp_player = root.find('.fp-player');
 
-      if ( root.data('item')['vr'] == true ) {
-        root.addClass('is-vr');
-      }
-
       class VR {
 
         constructor(player, options) {
@@ -966,30 +962,11 @@ void main() {
 //VR.VERSION = VERSION;
 
       api.on('ready', function () {
-        if ( root.data('item')['vr'] == true ) {
-          let player_id = root.attr('id');
+        root.addClass('is-vr', api.video.vr);
 
-          // unload all other VR players and reset their VR data
-          // so only 1 VR is only ever on screen and eating the processing power
-          $('.flowplayer[data-flowplayer-instance-id]').each( function() {
-            if ( this.id != player_id ) {
-              let
-                $player_el = $(this),
-                player = $player_el.data('flowplayer');
-
-              if (player && player.ready) {
-                // reset VR
-                if ( $player_el.data('vr') ) {
-                  $player_el.data('vr').reset();
-                  $player_el.removeData('vr');
-                }
-                player.unload();
-              }
-            }
-          });
-
+        if (api.video.vr) {
           let
-            vr_data = root.data('item')['vrvideo'],
+            vr_data = api.video.vrvideo,
             vr_object = new VR(root, {
               'projection': (vr_data.projection ? vr_data.projection : '360'),
               'sphereDetail' : 128
@@ -1001,7 +978,7 @@ void main() {
       });
 
       $(document).one('click', '.fp-ui', function() {
-        if ( browser.IS_IOS && root.data('item')['vr'] == true ) {
+        if ( browser.IS_IOS && api.video.vr == true ) {
           try {
             DeviceMotionEvent.requestPermission().then(response => {
               if (response == 'granted') {
