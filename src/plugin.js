@@ -709,11 +709,6 @@ void main() {
             return;
           }
 
-          // TODO: remove and add big play button to flowplayer
-          /*this.player_.removeChild('BigPlayButton');
-          this.player_.addChild('BigVrPlayButton', {}, this.bigPlayButtonIndex_);
-          this.player_.bigPlayButton = this.player_.getChild('BigVrPlayButton');*/
-
           // mobile devices, or cardboard forced to on
           if (this.options_.forceCardboard ||
             browser.IS_ANDROID ||
@@ -848,10 +843,21 @@ void main() {
         }
 
         addCardboardButton_() {
-          // TODO: convert for flowplayer (add cardboard button)
-          /*if (!this.player_.controlBar.getChild('CardboardButton')) {
-            this.player_.controlBar.addChild('CardboardButton', {});
-          }*/
+          $('<strong class="fv-fp-cardboard">VR</strong>')
+            .insertAfter(root.find('.fp-controls .fp-volume')).click(function () {
+              let $e = $(this);
+
+              if ( !$e.hasClass('active') ) {
+                if ( api.ready && !api.playing ) {
+                  api.play();
+                }
+                window.dispatchEvent(new window.Event('vrdisplayactivate'));
+              } else {
+                window.dispatchEvent(new window.Event('vrdisplaydeactivate'));
+              }
+
+              $e.toggleClass('active');
+            });
         }
 
         getVideoEl_() {
@@ -898,21 +904,8 @@ void main() {
           window.removeEventListener('vrdisplayactivate', this.handleVrDisplayActivate_, true);
           window.removeEventListener('vrdisplaydeactivate', this.handleVrDisplayDeactivate_, true);
 
-          // TODO: convert these buttons for flowplayer
-          // re-add the big play button to player
-          /*if (!this.player_.getChild('BigPlayButton')) {
-            this.player_.addChild('BigPlayButton', {}, this.bigPlayButtonIndex_);
-          }
-
-          if (this.player_.getChild('BigVrPlayButton')) {
-            this.player_.removeChild('BigVrPlayButton');
-          }*/
-
-          // TODO: convert to flowplayer
           // remove the cardboard button
-          /*if (this.player_.getChild('CardboardButton')) {
-            this.player_.controlBar.removeChild('CardboardButton');
-          }*/
+          $('.fv-fp-cardboard').remove();
 
           // TODO: controlbar check for flowplayer
           // show the fullscreen again
