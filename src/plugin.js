@@ -669,11 +669,18 @@ void main() {
         }
 
         handleResize_() {
-          this.applyResize_( this.effect, this.camera )
+          let
+            applyResizeLocal = this.applyResize_,
+            effectLocal = this.effect,
+            camLocal = this.camera;
+
+          applyResizeLocal( effectLocal, camLocal );
 
           // iOS does not recalculate player width and height on fullscreen resize (device orientation change),
           // so we need to give it 200ms time to cope and adjust the projection matrix accordingly
-          setTimeout(this.applyResize_( this.effect, this.camera ), 200);
+          setTimeout(function() {
+            applyResizeLocal( effectLocal, camLocal );
+          }, 200);
         }
 
         setProjection(projection) {
