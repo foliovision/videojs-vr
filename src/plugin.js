@@ -659,13 +659,21 @@ void main() {
           this.animationFrameId_ = this.requestAnimationFrame(this.animate_);
         }
 
-        handleResize_() {
+        applyResize_( effect, camera ) {
           const width = $fp_player.width();
           const height = $fp_player.height();
 
-          this.effect.setSize(width, height, false);
-          this.camera.aspect = width / height;
-          this.camera.updateProjectionMatrix();
+          effect.setSize(width, height, false);
+          camera.aspect = width / height;
+          camera.updateProjectionMatrix();
+        }
+
+        handleResize_() {
+          this.applyResize_( this.effect, this.camera )
+
+          // iOS does not recalculate player width and height on fullscreen resize (device orientation change),
+          // so we need to give it 200ms time to cope and adjust the projection matrix accordingly
+          setTimeout(this.applyResize_( this.effect, this.camera ), 200);
         }
 
         setProjection(projection) {
@@ -833,6 +841,8 @@ void main() {
           }
 
           api.on('fullscreen', this.handleResize_);
+          api.on('fullscreen-exit', this.handleResize_);
+          window.addEventListener('fullscreenchange', this.handleResize_, true);
           window.addEventListener('vrdisplaypresentchange', this.handleResize_, true);
           window.addEventListener('resize', this.handleResize_, true);
           window.addEventListener('vrdisplayactivate', this.handleVrDisplayActivate_, true);
