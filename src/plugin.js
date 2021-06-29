@@ -724,10 +724,8 @@ void main() {
             return;
           }
 
-          // mobile devices, or cardboard forced to on
-          if (this.options_.forceCardboard ||
-            browser.IS_ANDROID ||
-            browser.IS_IOS) {
+          // cardboard forced to on
+          if (this.options_.forceCardboard ) {
             this.addCardboardButton_();
           }
 
@@ -802,6 +800,10 @@ void main() {
                   // We use VRControls here since we are working with an HMD
                   // and we only want orientation controls.
                   this.controls3d = new VRControls(this.camera);
+                }
+
+                if (IS_ANDROID || IS_IOS) {
+                  this.addCardboardButton_();
                 }
               }
 
