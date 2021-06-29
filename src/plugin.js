@@ -39,7 +39,10 @@ jQuery( function($) {
   if( typeof(flowplayer) != "undefined" ) {
     flowplayer(function (api, root) {
       root = jQuery(root);
-      const $fp_player = root.find('.fp-player');
+      const $fp_player = root.find('.fp-player')
+      var videoElement = root.find('video'),
+        have_native_subtitles_conf = null,
+        have_subtitles_support = null;
 
       class VR {
 
@@ -771,7 +774,7 @@ void main() {
           this.renderedCanvas.setAttribute('style', 'width: 100%; height: 100%; position: absolute; top:0;');
           this.renderedCanvas.setAttribute('class', 'fp-vr-renderer');
 
-          const videoElement = root.find('video');
+          videoElement = root.find('video');
 
           if ( !videoElement.length ) {
             this.triggerError_({code: 'web-vr-video-not-found', dismiss: false});
@@ -1001,6 +1004,43 @@ void main() {
           }
         }
       });
+
+      // The video must be allowed to use CORS headers
+      // Also, without this HLS won't play on iPhone
+      function create_video_tag_with_cors() {
+        if (videoElement.length == 0) {
+          var video_el = flowplayer.common.createElement("video", {
+            className: "fp-engine",
+            crossOrigin: "anonymous",
+            'x-webkit-airplay': "allow",
+            preload: api.splash ? 'none' : true,
+            autoplay: api.splash ? 'autoplay' : false,
+            'webkit-playsinline': true,
+            'playsinline': true
+          });
+          flowplayer.common.prepend(flowplayer.common.find(".fp-player", root)[0], video_el);
+          videoElement = flowplayer.common.find("video", root);
+        }
+      }
+
+      // This is something to do with iOS - we need to force user of native subtitles
+      // otherwise the CORS won't be accepted - or something like that.
+      function video_tag_cors_and_subtitles_disabled_for_load() {
+        if (videoElement.length == 0 ) return;
+        videoElement[0].setAttribute("crossorigin", "anonymous");
+        api.on("load", function(e) {
+            have_native_subtitles_conf = Boolean(api.conf.nativesubtitles);
+            have_subtitles_support = Boolean(flowplayer.support.subtitles);
+            api.conf.nativesubtitles = true;
+            flowplayer.support.subtitles = false;
+        }).on("ready", function(e) {
+            api.conf.nativesubtitles = have_native_subtitles_conf;
+            flowplayer.support.subtitles = have_subtitles_support;
+        });
+      }
+
+      create_video_tag_with_cors();
+      video_tag_cors_and_subtitles_disabled_for_load();
     });
   }
 });
