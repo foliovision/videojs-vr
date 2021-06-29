@@ -697,7 +697,7 @@ void main() {
         init() {
           this.reset();
 
-          this.camera = new THREE.PerspectiveCamera(75, $fp_player.width() / $fp_player.height(), 1, 1000);
+          this.camera = new THREE.PerspectiveCamera(60, $fp_player.width() / $fp_player.height(), 1, 1000);
           // Store vector representing the direction in which the camera is looking, in world space.
           this.cameraVector = new THREE.Vector3();
 
