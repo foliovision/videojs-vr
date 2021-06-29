@@ -780,11 +780,10 @@ void main() {
             throw new Error('web-vr-video-not-found');
           }
 
-          const videoElStyle = videoElement[0].style;
-
-          videoElement.before(this.renderedCanvas);
-          videoElStyle.zIndex = '-1';
-          videoElStyle.opacity = '0';
+          // We must put the canvas after the video tag to make sure it's visible
+          // We should not be using video elementinline styles on video as
+          // FV Player DRM won't allow that in Firefox to avoid PiP
+          videoElement.after(this.renderedCanvas);
 
           if (window.navigator.getVRDisplays) {
             this.log('is supported, getting vr displays');
