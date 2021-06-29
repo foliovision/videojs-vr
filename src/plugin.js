@@ -659,13 +659,28 @@ void main() {
           this.animationFrameId_ = this.requestAnimationFrame(this.animate_);
         }
 
-        handleResize_() {
+        applyResize_( effect, camera ) {
           const width = $fp_player.width();
           const height = $fp_player.height();
 
-          this.effect.setSize(width, height, false);
-          this.camera.aspect = width / height;
-          this.camera.updateProjectionMatrix();
+          effect.setSize(width, height, false);
+          camera.aspect = width / height;
+          camera.updateProjectionMatrix();
+        }
+
+        handleResize_() {
+          let
+            applyResizeLocal = this.applyResize_,
+            effectLocal = this.effect,
+            camLocal = this.camera;
+
+          applyResizeLocal( effectLocal, camLocal );
+
+          // iOS does not recalculate player width and height on fullscreen resize (device orientation change),
+          // so we need to give it 200ms time to cope and adjust the projection matrix accordingly
+          setTimeout(function() {
+            applyResizeLocal( effectLocal, camLocal );
+          }, 200);
         }
 
         setProjection(projection) {
@@ -708,11 +723,6 @@ void main() {
             this.reset();
             return;
           }
-
-          // TODO: remove and add big play button to flowplayer
-          /*this.player_.removeChild('BigPlayButton');
-          this.player_.addChild('BigVrPlayButton', {}, this.bigPlayButtonIndex_);
-          this.player_.bigPlayButton = this.player_.getChild('BigVrPlayButton');*/
 
           // mobile devices, or cardboard forced to on
           if (this.options_.forceCardboard ||
@@ -838,6 +848,8 @@ void main() {
           }
 
           api.on('fullscreen', this.handleResize_);
+          api.on('fullscreen-exit', this.handleResize_);
+          window.addEventListener('fullscreenchange', this.handleResize_, true);
           window.addEventListener('vrdisplaypresentchange', this.handleResize_, true);
           window.addEventListener('resize', this.handleResize_, true);
           window.addEventListener('vrdisplayactivate', this.handleVrDisplayActivate_, true);
@@ -848,10 +860,21 @@ void main() {
         }
 
         addCardboardButton_() {
-          // TODO: convert for flowplayer (add cardboard button)
-          /*if (!this.player_.controlBar.getChild('CardboardButton')) {
-            this.player_.controlBar.addChild('CardboardButton', {});
-          }*/
+          $('<strong class="fv-fp-cardboard">VR</strong>')
+            .insertAfter(root.find('.fp-controls .fp-volume')).click(function () {
+              let $e = $(this);
+
+              if ( !$e.hasClass('active') ) {
+                if ( api.ready && !api.playing ) {
+                  api.play();
+                }
+                window.dispatchEvent(new window.Event('vrdisplayactivate'));
+              } else {
+                window.dispatchEvent(new window.Event('vrdisplaydeactivate'));
+              }
+
+              $e.toggleClass('active');
+            });
         }
 
         getVideoEl_() {
@@ -898,21 +921,8 @@ void main() {
           window.removeEventListener('vrdisplayactivate', this.handleVrDisplayActivate_, true);
           window.removeEventListener('vrdisplaydeactivate', this.handleVrDisplayDeactivate_, true);
 
-          // TODO: convert these buttons for flowplayer
-          // re-add the big play button to player
-          /*if (!this.player_.getChild('BigPlayButton')) {
-            this.player_.addChild('BigPlayButton', {}, this.bigPlayButtonIndex_);
-          }
-
-          if (this.player_.getChild('BigVrPlayButton')) {
-            this.player_.removeChild('BigVrPlayButton');
-          }*/
-
-          // TODO: convert to flowplayer
           // remove the cardboard button
-          /*if (this.player_.getChild('CardboardButton')) {
-            this.player_.controlBar.removeChild('CardboardButton');
-          }*/
+          $('.fv-fp-cardboard').remove();
 
           // TODO: controlbar check for flowplayer
           // show the fullscreen again
@@ -964,30 +974,9 @@ void main() {
       api.on('ready', function () {
         root.toggleClass('is-vr', api.video.vr);
 
-	      if (api.video.vr) {
-          let player_id = root.attr('id');
-
-          // unload all other VR players and reset their VR data
-          // so only 1 VR is only ever on screen and eating the processing power
-          $('.flowplayer[data-flowplayer-instance-id]').each( function() {
-            if ( this.id != player_id ) {
-              let
-                $player_el = $(this),
-                player = $player_el.data('flowplayer');
-
-              if (player && player.ready) {
-                // reset VR
-                if ( $player_el.data('vr') ) {
-                  $player_el.data('vr').reset();
-                  $player_el.removeData('vr');
-                }
-                player.unload();
-              }
-            }
-          });
-
+        if (api.video.vr) {
           let
-            vr_data = root.data('item')['vrvideo'],
+            vr_data = api.video.vrvideo,
             vr_object = new VR(root, {
               'projection': (vr_data.projection ? vr_data.projection : '360'),
               'sphereDetail' : 128
@@ -999,7 +988,7 @@ void main() {
       });
 
       $(document).one('click', '.fp-ui', function() {
-        if ( browser.IS_IOS && root.data('item')['vr'] == true ) {
+        if ( browser.IS_IOS && ( ( typeof( api.conf.clip ) != 'undefined' && api.conf.clip.vr ) || ( typeof( api.conf.playlist[0] ) != 'undefined' && api.conf.playlist[0].vr ) ) ) {
           try {
             DeviceMotionEvent.requestPermission().then(response => {
               if (response == 'granted') {
