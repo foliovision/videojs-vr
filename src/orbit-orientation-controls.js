@@ -47,7 +47,7 @@ class OrbitOrientationControls {
 
     this.speed = 0.5;
     this.orbit.target.set(0, 0, -1);
-    this.orbit.enableZoom = false;
+    this.orbit.enableZoom = true;
     this.orbit.enablePan = false;
     this.orbit.rotateSpeed = -this.speed;
 
