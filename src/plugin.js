@@ -782,7 +782,7 @@ void main() {
           }
 
           // We must put the canvas after the video tag to make sure it's visible
-          // We should not be using video elementinline styles on video as
+          // We should not be using video element inline styles on video as
           // FV Player DRM won't allow that in Firefox to avoid PiP
           videoElement.after(this.renderedCanvas);
           /*videoElStyle.zIndex = '-1';
@@ -807,7 +807,7 @@ void main() {
                   this.controls3d = new VRControls(this.camera);
                 }
 
-                if (IS_ANDROID || IS_IOS) {
+                if (browser.IS_ANDROID || browser.IS_IOS) {
                   this.addCardboardButton_();
                 }
               }
