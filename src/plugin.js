@@ -785,6 +785,8 @@ void main() {
           // We should not be using video elementinline styles on video as
           // FV Player DRM won't allow that in Firefox to avoid PiP
           videoElement.after(this.renderedCanvas);
+          /*videoElStyle.zIndex = '-1';
+          videoElStyle.opacity = '0';*/
 
           if (window.navigator.getVRDisplays) {
             this.log('is supported, getting vr displays');
