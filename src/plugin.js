@@ -40,7 +40,7 @@ jQuery( function($) {
     flowplayer(function (api, root) {
       root = jQuery(root);
       const $fp_player = root.find('.fp-player')
-      var videoElement = root.find('video'),
+      let videoElement = root.find('video'),
         have_native_subtitles_conf = null,
         have_subtitles_support = null;
 
@@ -858,7 +858,7 @@ void main() {
           api.on('fullscreen-exit', this.handleVrDisplayDeactivate_);
           // Hotfix for iPhone, make sure the canvas is not too big after leaving fullscreen
           // The Three JS code seems to set 100vh and 100 vw for it, but then there is nothing to remove that
-          var that = this;
+          let that = this;
           api.on('fullscreen-exit', function() {
             that.renderedCanvas.setAttribute('style', 'width: 100%; height: 100%; position: absolute; top:0;');
           });
@@ -1019,7 +1019,7 @@ void main() {
       // Also, without this HLS won't play on iPhone
       function create_video_tag_with_cors() {
         if (videoElement.length == 0) {
-          var video_el = flowplayer.common.createElement("video", {
+          let video_el = flowplayer.common.createElement("video", {
             className: "fp-engine",
             crossOrigin: "anonymous",
             'x-webkit-airplay': "allow",
