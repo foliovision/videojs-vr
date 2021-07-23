@@ -45,7 +45,7 @@ jQuery( function($) {
         have_subtitles_support = null;
 
       function isVRVideo() {
-        return ( ( typeof( api.conf.clip ) != 'undefined' && !api.conf.clip.vr ) || ( typeof( api.conf.playlist[0] ) != 'undefined' && !api.conf.playlist[0].vr ) );
+        return ( ( typeof( api.conf.clip ) != 'undefined' && api.conf.clip.vr ) || ( typeof( api.conf.playlist[0] ) != 'undefined' && api.conf.playlist[0].vr ) );
       }
 
       class VR {
@@ -1090,7 +1090,7 @@ void main() {
             'playsinline': true
           };
 
-        if ( isVRVideo() ) {
+        if ( !isVRVideo() ) {
           delete video_tag_properties['crossOrigin'];
         }
 
