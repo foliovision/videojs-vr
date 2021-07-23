@@ -585,6 +585,8 @@ void main() {
           }
           this.vrDisplay.exitPresent();
 
+          // remove active flag from the VR button
+          root.find('.fv-fp-cardboard').removeClass('active');
         }
 
         supportsRaf() {
@@ -673,9 +675,27 @@ void main() {
           camera.updateProjectionMatrix();
         }
 
+        checkIOSorientation() {
+          // if we're on iOS and in VR, check whether to show/hide
+          // message about VR not working in portrait mode
+          if ( browser.IS_IOS && root.find('.fv-fp-cardboard').hasClass('active') ) {
+            let $hidden_msg_div = root.find('.fp-vr-ios-msg');
+            if ( $hidden_msg_div.length ) {
+              if ( window.innerHeight > window.innerWidth ) {
+                root.data( 'vr' ).renderedCanvas.style.display = 'none';
+                $hidden_msg_div.show();
+              } else {
+                root.data( 'vr' ).renderedCanvas.style.display = 'block';
+                $hidden_msg_div.hide();
+              }
+            }
+          }
+        }
+
         handleResize_() {
           let
             applyResizeLocal = this.applyResize_,
+            checkISOorientationLocal = this.checkIOSorientation,
             effectLocal = this.effect,
             camLocal = this.camera;
 
@@ -685,6 +705,14 @@ void main() {
           // so we need to give it 200ms time to cope and adjust the projection matrix accordingly
           setTimeout(function() {
             applyResizeLocal( effectLocal, camLocal );
+            checkISOorientationLocal();
+
+            // we need to double-check whether we're in VR or not,
+            // since when exitting fullscreen might not trigger fullscreen-exit nor vrdisplaydeactivate events
+            if ( root.data('vr') && !root.data('vr').vrDisplay.isPresenting ) {
+              // remove active flag from the VR button
+              root.find('.fv-fp-cardboard').removeClass('active');
+            }
           }, 200);
         }
 
@@ -865,11 +893,15 @@ void main() {
           let that = this;
           api.on('fullscreen-exit', function() {
             that.renderedCanvas.setAttribute('style', 'width: 100%; height: 100%; position: absolute; top:0;');
+
+            // remove active flag from the VR button
+            root.find('.fv-fp-cardboard').removeClass('active');
           });
 
           window.addEventListener('fullscreenchange', this.handleResize_, true);
           window.addEventListener('vrdisplaypresentchange', this.handleResize_, true);
           window.addEventListener('resize', this.handleResize_, true);
+          window.addEventListener('orientationchange', this.checkIOSorientation, true);
           window.addEventListener('vrdisplayactivate', this.handleVrDisplayActivate_, true);
           window.addEventListener('vrdisplaydeactivate', this.handleVrDisplayDeactivate_, true);
 
@@ -1002,6 +1034,27 @@ void main() {
 
           root.data( 'vr', vr_object );
           vr_object.init();
+
+          // if we're on iOS, we need to add a hidden message that will be displayed
+          // instead of canvas when in portrait mode, since that mode screws VR output dimensions
+          if ( browser.IS_IOS ) {
+            // add hidden message DIV
+            let $hidden_msg_div = $('<div class="fp-vr-ios-msg">While in VR, please make sure to use landscape phone rotation.</div>');
+            $hidden_msg_div.css({
+              width: '100%',
+              height: '100%',
+              position: 'absolute',
+              'background-color': 'black',
+              display: 'none',
+              'padding-top': '20%',
+              'z-index': 1000,
+              'text-align': 'center',
+              color: 'white',
+            });
+
+            root.prepend( $hidden_msg_div );
+            vr_object.checkIOSorientation();
+          }
         }
       });
 
