@@ -44,6 +44,10 @@ jQuery( function($) {
         have_native_subtitles_conf = null,
         have_subtitles_support = null;
 
+      function isVRVideo() {
+        return ( ( typeof( api.conf.clip ) != 'undefined' && !api.conf.clip.vr ) || ( typeof( api.conf.playlist[0] ) != 'undefined' && !api.conf.playlist[0].vr ) );
+      }
+
       class VR {
 
         constructor(player, options) {
@@ -709,7 +713,7 @@ void main() {
 
             // we need to double-check whether we're in VR or not,
             // since when exitting fullscreen might not trigger fullscreen-exit nor vrdisplaydeactivate events
-            if ( root.data('vr') && !root.data('vr').vrDisplay.isPresenting ) {
+            if ( root.data('vr') && root.data('vr').vrDisplay && !root.data('vr').vrDisplay.isPresenting ) {
               // remove active flag from the VR button
               root.find('.fv-fp-cardboard').removeClass('active');
             }
@@ -1075,8 +1079,8 @@ void main() {
       // The video must be allowed to use CORS headers
       // Also, without this HLS won't play on iPhone
       function create_video_tag_with_cors() {
-        if (videoElement.length == 0) {
-          let video_el = flowplayer.common.createElement("video", {
+        let
+          video_tag_properties = {
             className: "fp-engine",
             crossOrigin: "anonymous",
             'x-webkit-airplay': "allow",
@@ -1084,7 +1088,14 @@ void main() {
             autoplay: api.splash ? 'autoplay' : false,
             'webkit-playsinline': true,
             'playsinline': true
-          });
+          };
+
+        if ( isVRVideo() ) {
+          delete video_tag_properties['crossOrigin'];
+        }
+
+        if (videoElement.length == 0) {
+          let video_el = flowplayer.common.createElement("video", video_tag_properties);
           flowplayer.common.prepend(flowplayer.common.find(".fp-player", root)[0], video_el);
           videoElement = flowplayer.common.find("video", root);
         }
@@ -1094,15 +1105,19 @@ void main() {
       // otherwise the CORS won't be accepted - or something like that.
       function video_tag_cors_and_subtitles_disabled_for_load() {
         if (videoElement.length == 0 ) return;
-        videoElement[0].setAttribute("crossorigin", "anonymous");
-        api.on("load", function(e) {
-            have_native_subtitles_conf = Boolean(api.conf.nativesubtitles);
-            have_subtitles_support = Boolean(flowplayer.support.subtitles);
-            api.conf.nativesubtitles = true;
-            flowplayer.support.subtitles = false;
-        }).on("ready", function(e) {
-            api.conf.nativesubtitles = have_native_subtitles_conf;
-            flowplayer.support.subtitles = have_subtitles_support;
+
+        if ( isVRVideo() ) {
+          videoElement[0].setAttribute("crossorigin", "anonymous");
+        }
+
+        api.on("load", function() {
+          have_native_subtitles_conf = Boolean(api.conf.nativesubtitles);
+          have_subtitles_support = Boolean(flowplayer.support.subtitles);
+          api.conf.nativesubtitles = true;
+          flowplayer.support.subtitles = false;
+        }).on("ready", function() {
+          api.conf.nativesubtitles = have_native_subtitles_conf;
+          flowplayer.support.subtitles = have_subtitles_support;
         });
       }
 
