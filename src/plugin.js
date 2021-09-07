@@ -683,14 +683,26 @@ void main() {
           // if we're on iOS and in VR, check whether to show/hide
           // message about VR not working in portrait mode
           if ( browser.IS_IOS && root.find('.fv-fp-cardboard').hasClass('active') ) {
-            let $hidden_msg_div = root.find('.fp-vr-ios-msg');
+            let
+              $hidden_msg_div = root.find('.fp-vr-ios-msg'),
+              $fp_ui = root.find('.fp-ui');
             if ( $hidden_msg_div.length ) {
               if ( window.innerHeight > window.innerWidth ) {
                 root.data( 'vr' ).renderedCanvas.style.display = 'none';
                 $hidden_msg_div.show();
+
+                // make the UI appear above the message
+                $fp_ui.data( 'fv_player_vr_old_index', $fp_ui.css( 'z-index' ) );
+                $fp_ui.css( 'z-index', 1001);
               } else {
                 root.data( 'vr' ).renderedCanvas.style.display = 'block';
                 $hidden_msg_div.hide();
+
+                // return the UI z-index to its original state
+                if ( $fp_ui.data('fv_player_vr_old_index') ) {
+                  $fp_ui.css( 'z-index', $fp_ui.data('fv_player_vr_old_index') );
+                  $fp_ui.removeData('fv_player_vr_old_index');
+                }
               }
             }
           }
