@@ -77,6 +77,9 @@ class CanvasPlayerControls extends EventTarget {
     const width = this.canvas.clientWidth;
     const height = this.canvas.clientHeight;
 
+    this.last_touch_x = touch_x;
+    this.last_touch_y = touch_y;
+
     this.resetTouchStatus();
 
     // Did the user tap where the cardboard UI back button is (top left)?
@@ -133,7 +136,16 @@ class CanvasPlayerControls extends EventTarget {
     // Increase touchMoveCount_ since Android detects 1 - 6 touches when user click normaly
     this.touchMoveCount_++;
 
-    this.resetTouchStatus();
+    const touch_x = e.touches && e.touches[0].clientX;
+    const touch_y = e.touches && e.touches[0].clientY;
+
+    // Detect actual touch move
+    if(
+      this.last_touch_x && Math.abs(this.last_touch_x - touch_x) > 10 ||
+      this.last_touch_y && Math.abs(this.last_touch_y - touch_y) > 10 
+    ) {
+      this.resetTouchStatus();
+    }
   }
 
   onControlBarMove(e) {
