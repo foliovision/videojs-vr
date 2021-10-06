@@ -7,9 +7,9 @@ import EventTarget from './event-target';
  * it does two things:
  *
  * 1. A `mousedown`/`touchstart` followed by `touchend`/`mouseup` without any
- *    `touchmove` or `mousemove` toggles play/pause on the player
+ *    `touchmove` or `mousemove` toggles play/pause on the player, or exits the VR mode, or shows VR config
  * 2. Only moving on/clicking the control bar or toggling play/pause should
- *    show the control bar. Moving around the scene in the canvas should not.
+ *    show the control bar. Moving around the scene in the canvas should not. Currently not used.
  */
 class CanvasPlayerControls extends EventTarget {
   constructor(player, canvas, api) {
@@ -50,7 +50,7 @@ class CanvasPlayerControls extends EventTarget {
     this.canvas.addEventListener('mouseup', this.onMoveEnd);
     this.canvas.addEventListener('touchend', this.onMoveEnd);
 
-    this.shouldTogglePlay = false;
+    this.resetTouchStatus();
   }
 
   togglePlay() {
@@ -68,11 +68,28 @@ class CanvasPlayerControls extends EventTarget {
     // toggle play.
     // TODO: how do we check for flowplayer having a controlbar?
     if (/*!this.player.controls() || */(e.type === 'mousedown' && !dom.isSingleLeftClick(e))) {
-      this.shouldTogglePlay = false;
+      this.resetTouchStatus();
       return;
     }
 
-    this.shouldTogglePlay = true;
+    const touch_x = e.touches && e.touches[0].clientX;
+    const touch_y = e.touches && e.touches[0].clientY;
+    const width = this.canvas.clientWidth;
+    const height = this.canvas.clientHeight;
+
+    this.resetTouchStatus();
+
+    // Did the user tap where the cardboard UI back button is (top left)?
+    if (touch_x < 50 && touch_y < 50) {
+      this.shouldExitVR = true;
+    // Did the user tap where the cardboard UI settings button is (bottom centered)?
+    } else if (touch_x > width / 2 - 25 && touch_x < width / 2 + 25 && touch_y > height - 50) {
+      this.shouldShowConfig = true;
+    // Any other tap should pause the video
+    } else {
+      this.shouldTogglePlay = true;
+    }
+
     this.touchMoveCount_ = 0;
   }
 
@@ -97,13 +114,16 @@ class CanvasPlayerControls extends EventTarget {
       return;*/
     }
 
-    if (!this.shouldTogglePlay) {
-      return;
-    }
-
-    // We want the same behavior in Desktop for VR360  and standar player
-    if(e.type == 'mouseup') {
-      this.togglePlay();
+    if (e.type == 'mouseup' || e.type == 'touchend') {
+      const vrDisplay = this.player.data('vr') && this.player.data('vr').vrDisplay;
+      if (vrDisplay && this.shouldExitVR) {
+        vrDisplay.exitPresent();
+      } else if (vrDisplay && this.shouldShowConfig) {
+        vrDisplay.viewerSelector_.show(vrDisplay.layer_.source.parentElement);
+      // We want the same behavior in Desktop for VR360  and standar player
+      } else if (this.shouldTogglePlay) {
+        this.togglePlay();
+      }
     }
 
   }
@@ -113,12 +133,18 @@ class CanvasPlayerControls extends EventTarget {
     // Increase touchMoveCount_ since Android detects 1 - 6 touches when user click normaly
     this.touchMoveCount_++;
 
-    this.shouldTogglePlay = false;
+    this.resetTouchStatus();
   }
 
   onControlBarMove(e) {
     // TODO: how to show control bar on flowplayer? do we need to? let's test
     //this.player.userActive(true);
+  }
+
+  resetTouchStatus() {
+    this.shouldExitVR = false;
+    this.shouldShowConfig = false;
+    this.shouldTogglePlay = false;
   }
 
   dispose() {

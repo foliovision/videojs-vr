@@ -68,8 +68,6 @@ jQuery( function($) {
           this.polyfill_ = new WebVRPolyfill({
             // do not show rotate instructions
             ROTATE_INSTRUCTIONS_DISABLED: true,
-            // disable cardboard UI with back button & settings
-            CARDBOARD_UI_DISABLED: true,
           });
           this.polyfill_ = new WebVRPolyfill();
 
