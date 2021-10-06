@@ -1038,6 +1038,11 @@ void main() {
 //VR.VERSION = VERSION;
 
       api.on('ready', function () {
+        if( api.video.vr && not_supported() ) {
+          fv_player_notice(root,"Your device does not support VR.",2000);
+          return;
+        }
+
         root.toggleClass('is-vr', api.video.vr);
 
         if (api.video.vr) {
@@ -1133,8 +1138,17 @@ void main() {
         });
       }
 
-      create_video_tag_with_cors();
-      video_tag_cors_and_subtitles_disabled_for_load();
+      if( !not_supported() ) {
+        create_video_tag_with_cors();
+        video_tag_cors_and_subtitles_disabled_for_load();
+      }
+
+
+      // TODO: It could work with a MP4 video, but not HLS
+      function not_supported() {
+        // Detect iOS < 14
+        return flowplayer.support.iOS && parseInt(flowplayer.support.iOS.version) < 14
+      }
     });
   }
 });
