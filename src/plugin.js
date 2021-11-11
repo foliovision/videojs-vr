@@ -525,11 +525,7 @@ void main() {
           });
         }
 
-        async handleVrDisplayActivate_() {
-          if (!this.vrDisplay) {
-            this.vrDisplay = await navigator.xr.requestSession('immersive-vr');
-          }
-
+        handleVrDisplayActivate_real_() {
           let gl = this.renderedCanvas.getContext('webgl', { xrCompatible: true });
           let xrLayer = new XRWebGLLayer(session, gl);
           this.vrDisplay.updateRenderState({ baseLayer: xrLayer });
@@ -576,6 +572,14 @@ void main() {
             this.renderedCanvas.removeEventListener('touchend', iosCardboardTouchEnd_);
             this.iosRevertTouchToClick_ = null;
           };
+        }
+
+        handleVrDisplayActivate_() {
+          if (!this.vrDisplay) {
+            navigator.xr.requestSession('immersive-vr').then( xrObject => { this.vrDisplay = xrObject; this.handleVrDisplayActivate_real_(); } );
+          } else {
+            this.handleVrDisplayActivate_real_();
+          }
         }
 
         handleVrDisplayDeactivate_() {
@@ -752,7 +756,7 @@ void main() {
           this.defaultProjection_ = projection.toUpperCase();
         }
 
-        async init() {
+        init() {
           this.reset();
 
           this.camera = new THREE.PerspectiveCamera(60, $fp_player.width() / $fp_player.height(), 1, 1000);
@@ -849,91 +853,96 @@ void main() {
           /*videoElStyle.zIndex = '-1';
           videoElStyle.opacity = '0';*/
 
-          let supported = navigator.xr && await navigator.xr.isSessionSupported('immersive-vr');
-          if (supported) {
-            this.log('is supported, starting WebXR session');
-            this.vrDisplay = await navigator.xr.requestSession('immersive-vr');
+          if ( navigator.xr ) {
+            navigator.xr.isSessionSupported('immersive-vr').then( supported => {
+              if (supported) {
+                this.log('is supported, starting WebXR session');
+                navigator.xr.requestSession('immersive-vr').then( xrSession => {
+                  this.vrDisplay = xrSession;
 
-            // Native WebVR Head Mounted Displays (HMDs) like the HTC Vive
-            // also need the cardboard button to enter fully immersive mode
-            // so, we want to add the button if we're not polyfilled.
-            // TODO: do w need this for WebXR?
-            /*if (!this.vrDisplay.isPolyfilled) {
-              this.log('Real HMD found using VRControls', this.vrDisplay);
-              this.addCardboardButton_();
+                  // Native WebVR Head Mounted Displays (HMDs) like the HTC Vive
+                  // also need the cardboard button to enter fully immersive mode
+                  // so, we want to add the button if we're not polyfilled.
+                  // TODO: do w need this for WebXR?
+                  /*if (!this.vrDisplay.isPolyfilled) {
+                    this.log('Real HMD found using VRControls', this.vrDisplay);
+                    this.addCardboardButton_();
 
-              // We use VRControls here since we are working with an HMD
-              // and we only want orientation controls.
-              this.controls3d = new VRControls(this.camera);
-            }*/
+                    // We use VRControls here since we are working with an HMD
+                    // and we only want orientation controls.
+                    this.controls3d = new VRControls(this.camera);
+                  }*/
 
-            if (browser.IS_ANDROID || browser.IS_IOS) {
-              this.addCardboardButton_();
-            }
+                  if (browser.IS_ANDROID || browser.IS_IOS) {
+                    this.addCardboardButton_();
+                  }
 
-            if (!this.controls3d) {
-              this.log('no HMD found Using Orbit & Orientation Controls');
-              const options = {
-                camera: this.camera,
-                canvas: this.renderedCanvas,
-                // check if its a half sphere view projection
-                halfView: this.currentProjection_.indexOf('180') === 0,
-                orientation: browser.IS_IOS || browser.IS_ANDROID || false
-              };
+                  if (!this.controls3d) {
+                    this.log('no HMD found Using Orbit & Orientation Controls');
+                    const options = {
+                      camera: this.camera,
+                      canvas: this.renderedCanvas,
+                      // check if its a half sphere view projection
+                      halfView: this.currentProjection_.indexOf('180') === 0,
+                      orientation: browser.IS_IOS || browser.IS_ANDROID || false
+                    };
 
-              if (this.options_.motionControls === false) {
-                options.orientation = false;
+                    if (this.options_.motionControls === false) {
+                      options.orientation = false;
+                    }
+
+                    this.controls3d = new OrbitOrientationContols(options);
+                    this.canvasPlayerControls = new CanvasPlayerControls(this.player_, this.renderedCanvas, this.api_);
+                  }
+
+                  this.animationFrameId_ = this.requestAnimationFrame(this.animate_);
+
+                  if (this.options_.omnitone) {
+                    const audiocontext = THREE.AudioContext.getContext();
+
+                    this.omniController = new OmnitoneController(
+                      audiocontext,
+                      this.options_.omnitone, this.getVideoEl_(), this.options_.omnitoneOptions
+                    );
+                    this.omniController.one('audiocontext-suspended', () => {
+                      api.pause();
+                      api.one('playing', () => {
+                        audiocontext.resume();
+                      });
+                    });
+                  }
+
+                  api.on('fullscreen', this.handleResize_);
+                  api.on('fullscreen-exit', this.handleResize_);
+
+                  // Hotfix for iPhone, make sure that exiting fullscreen will disable VR mode
+                  api.on('fullscreen-exit', this.handleVrDisplayDeactivate_);
+                  // Hotfix for iPhone, make sure the canvas is not too big after leaving fullscreen
+                  // The Three JS code seems to set 100vh and 100 vw for it, but then there is nothing to remove that
+                  let that = this;
+                  api.on('fullscreen-exit', function() {
+                    that.renderedCanvas.setAttribute('style', 'width: 100%; height: 100%; position: absolute; top:0;');
+
+                    // remove active flag from the VR button
+                    root.find('.fv-fp-cardboard').removeClass('active');
+                  });
+
+                  window.addEventListener('fullscreenchange', this.handleResize_, true);
+                  window.addEventListener('resize', this.handleResize_, true);
+                  window.addEventListener('orientationchange', this.checkIOSorientation, true);
+
+                  if ( this.vrDisplay ) {
+                    this.vrDisplay.addEventListener('end', this.handleVrDisplayDeactivate_, true);
+                  }
+
+                  this.initialized_ = true;
+                  //this.trigger('initialized');
+                } );
+              } else {
+                this.triggerError_({code: 'web-xr-not-supported', dismiss: false});
               }
-
-              this.controls3d = new OrbitOrientationContols(options);
-              this.canvasPlayerControls = new CanvasPlayerControls(this.player_, this.renderedCanvas, this.api_);
-            }
-
-            this.animationFrameId_ = this.requestAnimationFrame(this.animate_);
-          } else {
-            this.triggerError_({code: 'web-xr-not-supported', dismiss: false});
+            } );
           }
-
-          if (this.options_.omnitone) {
-            const audiocontext = THREE.AudioContext.getContext();
-
-            this.omniController = new OmnitoneController(
-              audiocontext,
-              this.options_.omnitone, this.getVideoEl_(), this.options_.omnitoneOptions
-            );
-            this.omniController.one('audiocontext-suspended', () => {
-              api.pause();
-              api.one('playing', () => {
-                audiocontext.resume();
-              });
-            });
-          }
-
-          api.on('fullscreen', this.handleResize_);
-          api.on('fullscreen-exit', this.handleResize_);
-
-          // Hotfix for iPhone, make sure that exiting fullscreen will disable VR mode
-          api.on('fullscreen-exit', this.handleVrDisplayDeactivate_);
-          // Hotfix for iPhone, make sure the canvas is not too big after leaving fullscreen
-          // The Three JS code seems to set 100vh and 100 vw for it, but then there is nothing to remove that
-          let that = this;
-          api.on('fullscreen-exit', function() {
-            that.renderedCanvas.setAttribute('style', 'width: 100%; height: 100%; position: absolute; top:0;');
-
-            // remove active flag from the VR button
-            root.find('.fv-fp-cardboard').removeClass('active');
-          });
-
-          window.addEventListener('fullscreenchange', this.handleResize_, true);
-          window.addEventListener('resize', this.handleResize_, true);
-          window.addEventListener('orientationchange', this.checkIOSorientation, true);
-
-          if ( this.vrDisplay ) {
-            this.vrDisplay.addEventListener('end', this.handleVrDisplayDeactivate_, true);
-          }
-
-          this.initialized_ = true;
-          //this.trigger('initialized');
         }
 
         addCardboardButton_() {
