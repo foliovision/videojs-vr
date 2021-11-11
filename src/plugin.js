@@ -1,33 +1,29 @@
 //import {version as VERSION} from '../package.json';
 import window from 'global/window';
 import document from 'global/document';
-import WebVRPolyfill from 'webvr-polyfill';
+import WebXRPolyfill from 'webxr-polyfill';
 import * as THREE from 'three';
-import VRControls from 'three/examples/js/controls/VRControls.js';
+// import VRControls from 'three/examples/js/controls/VRControls.js';
 import VREffect from 'three/examples/js/effects/VREffect.js';
 import OrbitOrientationContols from './orbit-orientation-controls.js';
 import * as utils from './utils';
 import * as browser from './browser';
 import CanvasPlayerControls from './canvas-player-controls';
 import OmnitoneController from './omnitone-controller';
+import XRWebGLLayer from "webxr-polyfill/src/api/XRWebGLLayer";
 
 const errors = {
-  'web-vr-out-of-date': {
-    headline: '360 is out of date',
-    type: '360_OUT_OF_DATE',
-    message: "Your browser supports 360 but not the latest version. See <a href='http://webvr.info'>http://webvr.info</a> for more info."
-  },
-  'web-vr-not-supported': {
+  'web-xr-not-supported': {
     headline: '360 not supported on this device',
     type: '360_NOT_SUPPORTED',
-    message: "Your browser does not support 360. See <a href='http://webvr.info'>http://webvr.info</a> for assistance."
+    message: "Your browser does not support 360. See <a href='http://webxr.info'>http://webxr.info</a> for assistance."
   },
-  'web-vr-hls-cors-not-supported': {
+  'web-xr-hls-cors-not-supported': {
     headline: '360 HLS video not supported on this device',
     type: '360_NOT_SUPPORTED',
-    message: "Your browser/device does not support HLS 360 video. See <a href='http://webvr.info'>http://webvr.info</a> for assistance."
+    message: "Your browser/device does not support HLS 360 video. See <a href='http://webxr.info'>http://webxr.info</a> for assistance."
   },
-  'web-vr-video-not-found': {
+  'web-xr-video-not-found': {
     headline: '360 video element not found',
     type: '360_VIDEO_NOT_FOUND',
     message: "The 3D video did not load correctly. Please try to reload the page."
@@ -61,17 +57,17 @@ jQuery( function($) {
           if (browser.IE_VERSION || !utils.corsSupport) {
             // if a player triggers error before 'loadstart' is fired
             // video.js will reset the error overlay
-            this.triggerError_({code: 'web-vr-not-supported', dismiss: false});
+            this.triggerError_({code: 'web-xr-not-supported', dismiss: false});
             return;
           }
 
-          this.polyfill_ = new WebVRPolyfill({
+          this.polyfill_ = new WebXRPolyfill({
             // do not show rotate instructions
             ROTATE_INSTRUCTIONS_DISABLED: true,
             // for iPhone disable cardboard UI with back button & settings
             CARDBOARD_UI_DISABLED: flowplayer.support.iOS,
           });
-          this.polyfill_ = new WebVRPolyfill();
+          //this.polyfill_ = new WebXRPolyfill();
 
           this.handleVrDisplayActivate_ = this.handleVrDisplayActivate_.bind(this);
           this.handleVrDisplayDeactivate_ = this.handleVrDisplayDeactivate_.bind(this)
@@ -529,65 +525,67 @@ void main() {
           });
         }
 
-        handleVrDisplayActivate_() {
+        async handleVrDisplayActivate_() {
           if (!this.vrDisplay) {
+            this.vrDisplay = await navigator.xr.requestSession('immersive-vr');
+          }
+
+          let gl = this.renderedCanvas.getContext('webgl', { xrCompatible: true });
+          let xrLayer = new XRWebGLLayer(session, gl);
+          this.vrDisplay.updateRenderState({ baseLayer: xrLayer });
+
+          if ( !browser.IS_IOS ) {
             return;
           }
-          this.vrDisplay.requestPresent([{source: this.renderedCanvas}]).then(() => {
-            // TODO: check this, as we don't seem to have cardboardUI_ (even check what's vrDisplay pointing to at this point - I think this is a real VR display on a VR device)
-            if (!this.vrDisplay.cardboardUI_ || !browser.IS_IOS) {
+
+          // webvr-polyfill/cardboard ui only watches for click events
+          // to tell that the back arrow button is pressed during cardboard vr.
+          // but somewhere along the line these events are silenced with preventDefault
+          // but only on iOS, so we translate them ourselves here
+          let touches = [];
+          const iosCardboardTouchStart_ = (e) => {
+            for (let i = 0; i < e.touches.length; i++) {
+              touches.push(e.touches[i]);
+            }
+          };
+
+          const iosCardboardTouchEnd_ = (e) => {
+            if (!touches.length) {
               return;
             }
 
-            // webvr-polyfill/cardboard ui only watches for click events
-            // to tell that the back arrow button is pressed during cardboard vr.
-            // but somewhere along the line these events are silenced with preventDefault
-            // but only on iOS, so we translate them ourselves here
-            let touches = [];
-            const iosCardboardTouchStart_ = (e) => {
-              for (let i = 0; i < e.touches.length; i++) {
-                touches.push(e.touches[i]);
-              }
-            };
-
-            const iosCardboardTouchEnd_ = (e) => {
-              if (!touches.length) {
-                return;
-              }
-
-              touches.forEach((t) => {
-                const simulatedClick = new window.MouseEvent('click', {
-                  screenX: t.screenX,
-                  screenY: t.screenY,
-                  clientX: t.clientX,
-                  clientY: t.clientY
-                });
-
-                this.renderedCanvas.dispatchEvent(simulatedClick);
+            touches.forEach((t) => {
+              const simulatedClick = new window.MouseEvent('click', {
+                screenX: t.screenX,
+                screenY: t.screenY,
+                clientX: t.clientX,
+                clientY: t.clientY
               });
 
-              touches = [];
-            };
+              this.renderedCanvas.dispatchEvent(simulatedClick);
+            });
 
-            this.renderedCanvas.addEventListener('touchstart', iosCardboardTouchStart_);
-            this.renderedCanvas.addEventListener('touchend', iosCardboardTouchEnd_);
+            touches = [];
+          };
 
-            this.iosRevertTouchToClick_ = () => {
-              this.renderedCanvas.removeEventListener('touchstart', iosCardboardTouchStart_);
-              this.renderedCanvas.removeEventListener('touchend', iosCardboardTouchEnd_);
-              this.iosRevertTouchToClick_ = null;
-            };
-          });
+          this.renderedCanvas.addEventListener('touchstart', iosCardboardTouchStart_);
+          this.renderedCanvas.addEventListener('touchend', iosCardboardTouchEnd_);
+
+          this.iosRevertTouchToClick_ = () => {
+            this.renderedCanvas.removeEventListener('touchstart', iosCardboardTouchStart_);
+            this.renderedCanvas.removeEventListener('touchend', iosCardboardTouchEnd_);
+            this.iosRevertTouchToClick_ = null;
+          };
         }
 
         handleVrDisplayDeactivate_() {
-          if (!this.vrDisplay || !this.vrDisplay.isPresenting) {
+          if (!this.vrDisplay) {
             return;
           }
           if (this.iosRevertTouchToClick_) {
             this.iosRevertTouchToClick_();
           }
-          this.vrDisplay.exitPresent();
+          this.vrDisplay.end();
 
           // remove active flag from the VR button
           root.find('.fv-fp-cardboard').removeClass('active');
@@ -665,8 +663,19 @@ void main() {
               }
             }
           }
-          this.camera.getWorldDirection(this.cameraVector);
 
+          // TODO: if the gamepads code doesn't work, this is from the WebVR to WebXR migration code
+          //       however, I've got no idea what xrReferenceSpace should point to here...
+          // Loop through all input sources.
+          /*for (let inputSource of xrSession.inputSources) {
+            // Show the input source if it has a grip space
+            if (inputSource.gripSpace) {
+              let inputPose = frame.getPose(inputSource.gripSpace, xrReferenceSpace);
+              scene.showControllerAtTransform(inputPose.position, inputPose.orientation, inputSource.handedness);
+            }
+          }*/
+
+          this.camera.getWorldDirection(this.cameraVector);
           this.animationFrameId_ = this.requestAnimationFrame(this.animate_);
         }
 
@@ -743,7 +752,7 @@ void main() {
           this.defaultProjection_ = projection.toUpperCase();
         }
 
-        init() {
+        async init() {
           this.reset();
 
           this.camera = new THREE.PerspectiveCamera(60, $fp_player.width() / $fp_player.height(), 1, 1000);
@@ -802,7 +811,7 @@ void main() {
             } catch (e) {
               this.reset();
               api.pause();
-              this.triggerError_({code: 'web-vr-hls-cors-not-supported', dismiss: false});
+              this.triggerError_({code: 'web-xr-hls-cors-not-supported', dismiss: false});
               throw new Error(e);
             }
           };
@@ -811,6 +820,12 @@ void main() {
           this.effect = new VREffect(this.renderer);
 
           this.effect.setSize($fp_player.width(), $fp_player.height(), false);
+
+          // end an old WebXR session
+          if ( this.vrDisplay ) {
+            this.vrDisplay.end();
+          }
+
           this.vrDisplay = null;
 
           // Previous timestamps for gamepad updates
@@ -823,8 +838,8 @@ void main() {
           videoElement = root.find('video');
 
           if ( !videoElement.length ) {
-            this.triggerError_({code: 'web-vr-video-not-found', dismiss: false});
-            throw new Error('web-vr-video-not-found');
+            this.triggerError_({code: 'web-xr-video-not-found', dismiss: false});
+            throw new Error('web-xr-video-not-found');
           }
 
           // We must put the canvas after the video tag to make sure it's visible
@@ -834,54 +849,49 @@ void main() {
           /*videoElStyle.zIndex = '-1';
           videoElStyle.opacity = '0';*/
 
-          if (window.navigator.getVRDisplays) {
-            this.log('is supported, getting vr displays');
-            window.navigator.getVRDisplays().then((displays) => {
-              if (displays.length > 0) {
-                this.log('Displays found', displays);
-                this.vrDisplay = displays[0];
+          let supported = navigator.xr && await navigator.xr.isSessionSupported('immersive-vr');
+          if (supported) {
+            this.log('is supported, starting WebXR session');
+            this.vrDisplay = await navigator.xr.requestSession('immersive-vr');
 
-                // Native WebVR Head Mounted Displays (HMDs) like the HTC Vive
-                // also need the cardboard button to enter fully immersive mode
-                // so, we want to add the button if we're not polyfilled.
-                if (!this.vrDisplay.isPolyfilled) {
-                  this.log('Real HMD found using VRControls', this.vrDisplay);
-                  this.addCardboardButton_();
+            // Native WebVR Head Mounted Displays (HMDs) like the HTC Vive
+            // also need the cardboard button to enter fully immersive mode
+            // so, we want to add the button if we're not polyfilled.
+            // TODO: do w need this for WebXR?
+            /*if (!this.vrDisplay.isPolyfilled) {
+              this.log('Real HMD found using VRControls', this.vrDisplay);
+              this.addCardboardButton_();
 
-                  // We use VRControls here since we are working with an HMD
-                  // and we only want orientation controls.
-                  this.controls3d = new VRControls(this.camera);
-                }
+              // We use VRControls here since we are working with an HMD
+              // and we only want orientation controls.
+              this.controls3d = new VRControls(this.camera);
+            }*/
 
-                if (browser.IS_ANDROID || browser.IS_IOS) {
-                  this.addCardboardButton_();
-                }
+            if (browser.IS_ANDROID || browser.IS_IOS) {
+              this.addCardboardButton_();
+            }
+
+            if (!this.controls3d) {
+              this.log('no HMD found Using Orbit & Orientation Controls');
+              const options = {
+                camera: this.camera,
+                canvas: this.renderedCanvas,
+                // check if its a half sphere view projection
+                halfView: this.currentProjection_.indexOf('180') === 0,
+                orientation: browser.IS_IOS || browser.IS_ANDROID || false
+              };
+
+              if (this.options_.motionControls === false) {
+                options.orientation = false;
               }
 
-              if (!this.controls3d) {
-                this.log('no HMD found Using Orbit & Orientation Controls');
-                const options = {
-                  camera: this.camera,
-                  canvas: this.renderedCanvas,
-                  // check if its a half sphere view projection
-                  halfView: this.currentProjection_.indexOf('180') === 0,
-                  orientation: browser.IS_IOS || browser.IS_ANDROID || false
-                };
+              this.controls3d = new OrbitOrientationContols(options);
+              this.canvasPlayerControls = new CanvasPlayerControls(this.player_, this.renderedCanvas, this.api_);
+            }
 
-                if (this.options_.motionControls === false) {
-                  options.orientation = false;
-                }
-
-                this.controls3d = new OrbitOrientationContols(options);
-                this.canvasPlayerControls = new CanvasPlayerControls(this.player_, this.renderedCanvas, this.api_);
-              }
-
-              this.animationFrameId_ = this.requestAnimationFrame(this.animate_);
-            });
-          } else if (window.navigator.getVRDevices) {
-            this.triggerError_({code: 'web-vr-out-of-date', dismiss: false});
+            this.animationFrameId_ = this.requestAnimationFrame(this.animate_);
           } else {
-            this.triggerError_({code: 'web-vr-not-supported', dismiss: false});
+            this.triggerError_({code: 'web-xr-not-supported', dismiss: false});
           }
 
           if (this.options_.omnitone) {
@@ -915,11 +925,12 @@ void main() {
           });
 
           window.addEventListener('fullscreenchange', this.handleResize_, true);
-          window.addEventListener('vrdisplaypresentchange', this.handleResize_, true);
           window.addEventListener('resize', this.handleResize_, true);
           window.addEventListener('orientationchange', this.checkIOSorientation, true);
-          window.addEventListener('vrdisplayactivate', this.handleVrDisplayActivate_, true);
-          window.addEventListener('vrdisplaydeactivate', this.handleVrDisplayDeactivate_, true);
+
+          if ( this.vrDisplay ) {
+            this.vrDisplay.addEventListener('end', this.handleVrDisplayDeactivate_, true);
+          }
 
           this.initialized_ = true;
           //this.trigger('initialized');
@@ -982,10 +993,11 @@ void main() {
             this.effect = null;
           }
 
+          if ( this.vrDisplay ) {
+            this.vrDisplay.removeEventListener('end', this.handleVrDisplayDeactivate_, true);
+          }
+
           window.removeEventListener('resize', this.handleResize_, true);
-          window.removeEventListener('vrdisplaypresentchange', this.handleResize_, true);
-          window.removeEventListener('vrdisplayactivate', this.handleVrDisplayActivate_, true);
-          window.removeEventListener('vrdisplaydeactivate', this.handleVrDisplayDeactivate_, true);
 
           // remove the cardboard button
           $('.fv-fp-cardboard').remove();
@@ -1028,7 +1040,7 @@ void main() {
         }
 
         polyfillVersion() {
-          return WebVRPolyfill.version;
+          return '2.0.3';
         }
       }
 
