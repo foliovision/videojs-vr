@@ -527,7 +527,7 @@ void main() {
 
         handleVrDisplayActivate_real_() {
           let gl = this.renderedCanvas.getContext('webgl', { xrCompatible: true });
-          let xrLayer = new XRWebGLLayer(session, gl);
+          let xrLayer = new XRWebGLLayer(this.vrDisplay, gl);
           this.vrDisplay.updateRenderState({ baseLayer: xrLayer });
 
           if ( !browser.IS_IOS ) {
@@ -854,10 +854,10 @@ void main() {
           videoElStyle.opacity = '0';*/
 
           if ( navigator.xr ) {
-            navigator.xr.isSessionSupported('immersive-vr').then( supported => {
+            navigator.xr.isSessionSupported('inline').then( supported => {
               if (supported) {
                 this.log('is supported, starting WebXR session');
-                navigator.xr.requestSession('immersive-vr').then( xrSession => {
+                navigator.xr.requestSession('inline').then( xrSession => {
                   this.vrDisplay = xrSession;
 
                   // Native WebVR Head Mounted Displays (HMDs) like the HTC Vive
