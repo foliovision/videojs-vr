@@ -928,8 +928,11 @@ void main() {
                   });
 
                   window.addEventListener('fullscreenchange', this.handleResize_, true);
+                  window.addEventListener('vrdisplaypresentchange', this.handleResize_, true);
                   window.addEventListener('resize', this.handleResize_, true);
                   window.addEventListener('orientationchange', this.checkIOSorientation, true);
+                  window.addEventListener('vrdisplayactivate', this.handleVrDisplayActivate_, true);
+                  window.addEventListener('vrdisplaydeactivate', this.handleVrDisplayDeactivate_, true);
 
                   if ( this.vrDisplay ) {
                     this.vrDisplay.addEventListener('end', this.handleVrDisplayDeactivate_, true);
@@ -1007,6 +1010,9 @@ void main() {
           }
 
           window.removeEventListener('resize', this.handleResize_, true);
+          window.removeEventListener('vrdisplaypresentchange', this.handleResize_, true);
+          window.removeEventListener('vrdisplayactivate', this.handleVrDisplayActivate_, true);
+          window.removeEventListener('vrdisplaydeactivate', this.handleVrDisplayDeactivate_, true);
 
           // remove the cardboard button
           $('.fv-fp-cardboard').remove();
