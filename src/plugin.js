@@ -576,7 +576,8 @@ void main() {
 
         handleVrDisplayActivate_() {
           if (!this.vrDisplay) {
-            navigator.xr.requestSession('immersive-vr').then( xrObject => { this.vrDisplay = xrObject; this.handleVrDisplayActivate_real_(); } );
+            //navigator.xr.requestSession('immersive-vr').then( xrObject => { this.vrDisplay = xrObject; this.handleVrDisplayActivate_real_(); } );
+            navigator.xr.requestSession('inline').then( xrObject => { this.vrDisplay = xrObject; this.handleVrDisplayActivate_real_(); } );
           } else {
             this.handleVrDisplayActivate_real_();
           }
@@ -854,9 +855,11 @@ void main() {
           videoElStyle.opacity = '0';*/
 
           if ( navigator.xr ) {
+            //navigator.xr.isSessionSupported('immersive-vr').then( supported => {
             navigator.xr.isSessionSupported('inline').then( supported => {
               if (supported) {
                 this.log('is supported, starting WebXR session');
+                //navigator.xr.requestSession('immersive-vr').then( xrSession => {
                 navigator.xr.requestSession('inline').then( xrSession => {
                   this.vrDisplay = xrSession;
 
@@ -937,6 +940,8 @@ void main() {
                   if ( this.vrDisplay ) {
                     this.vrDisplay.addEventListener('end', this.handleVrDisplayDeactivate_, true);
                   }
+
+                  this.handleVrDisplayActivate_();
 
                   this.initialized_ = true;
                   //this.trigger('initialized');
@@ -1077,7 +1082,8 @@ void main() {
             vr_data = api.video.vrvideo,
             vr_object = new VR(root, {
               'projection': (vr_data.projection ? vr_data.projection : '360'),
-              'sphereDetail' : 128
+              'sphereDetail' : 128,
+              'debug' : true
             });
 
           root.data( 'vr', vr_object );
