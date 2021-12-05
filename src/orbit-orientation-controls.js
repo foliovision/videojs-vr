@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import OrbitControls from 'three/examples/js/controls/OrbitControls.js';
-import DeviceOrientationControls from 'three/examples/js/controls/DeviceOrientationControls.js';
+import { OrbitControls } from './OrbitControls.js';
+import { DeviceOrientationControls } from './DeviceOrientationControls.js';
 
 /**
  * Convert a quaternion to an angle
@@ -46,7 +46,7 @@ class OrbitOrientationControls {
     this.orbit = new OrbitControls(this.object, this.domElement);
 
     this.speed = 0.5;
-    this.orbit.target.set(0, 0, -1);
+    this.orbit.target.set(0, 1, -1);
     this.orbit.enableZoom = true;
     this.orbit.enablePan = false;
     this.orbit.rotateSpeed = -this.speed;
@@ -97,6 +97,20 @@ class OrbitOrientationControls {
     if (this.orientation) {
       this.orientation.dispose();
     }
+  }
+
+  enable() {
+    this.orbit.enabled = true;
+
+    if (this.orientation)
+      this.orientation.enabled = true;
+  }
+
+  disable() {
+    this.orbit.enabled = false;
+
+    if (this.orientation)
+      this.orientation.enabled = false;
   }
 
 }

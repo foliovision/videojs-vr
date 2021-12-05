@@ -2,8 +2,6 @@ const replace = require('rollup-plugin-re');
 
 // three modules to find-replace in
 const modules = [
-  'VRControls',
-  'VREffect',
   'OrbitControls',
   'DeviceOrientationControls'
 ];
