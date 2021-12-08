@@ -1,4 +1,4 @@
-//import {version as VERSION} from '../package.json';
+// import {version as VERSION} from '../package.json';
 import window from 'global/window';
 import document from 'global/document';
 import 'babel-polyfill';
@@ -24,20 +24,20 @@ const errors = {
   'web-xr-video-not-found': {
     headline: '360 video element not found',
     type: '360_VIDEO_NOT_FOUND',
-    message: "The 3D video did not load correctly. Please try to reload the page."
-  },
+    message: 'The 3D video did not load correctly. Please try to reload the page.'
+  }
 };
 
-if( typeof(flowplayer) != "undefined" ) {
-  flowplayer(function (api, root) {
+if (typeof (flowplayer) !== 'undefined') {
+  flowplayer(function(api, root) {
     root = jQuery(root);
-    const $fp_player = root.find('.fp-player')
-    let videoElement = root.find('video'),
-      have_native_subtitles_conf = null,
-      have_subtitles_support = null;
+    const $fp_player = root.find('.fp-player');
+    let videoElement = root.find('video');
+    let have_native_subtitles_conf = null;
+    let have_subtitles_support = null;
 
     function isVRVideo() {
-      return ( ( typeof( api.conf.clip ) != 'undefined' && api.conf.clip.vr ) || ( typeof( api.conf.playlist[0] ) != 'undefined' && api.conf.playlist[0].vr ) );
+      return ((typeof (api.conf.clip) !== 'undefined' && api.conf.clip.vr) || (typeof (api.conf.playlist[0]) !== 'undefined' && api.conf.playlist[0].vr));
     }
 
     class VR {
@@ -62,9 +62,9 @@ if( typeof(flowplayer) != "undefined" ) {
             // do not show rotate instructions
             ROTATE_INSTRUCTIONS_DISABLED: true,
             // for iPhone disable cardboard UI with back button & settings
-            CARDBOARD_UI_DISABLED: flowplayer.support.iOS,
+            CARDBOARD_UI_DISABLED: flowplayer.support.iOS
           });
-          //this.polyfill_ = new WebXRPolyfill();
+          // this.polyfill_ = new WebXRPolyfill();
         }
 
         this.handleVrDisplayActivate_ = this.handleVrDisplayActivate_.bind(this);
@@ -79,7 +79,7 @@ if( typeof(flowplayer) != "undefined" ) {
         // any time the video element is recycled for ads
         // we have to reset the vr state and re-init after ad
         // TODO: convert for flowplayer when we have mid-roll ads
-        /*this.on(player, 'adstart', () => player.setTimeout(() => {
+        /* this.on(player, 'adstart', () => player.setTimeout(() => {
           // if the video element was recycled for this ad
           if (!player.ads || !player.ads.videoElementRecycled()) {
             this.log('video element not recycled for this ad, no need to reset');
@@ -92,7 +92,7 @@ if( typeof(flowplayer) != "undefined" ) {
           this.one(player, 'playing', this.init);
         }), 1);*/
 
-        //this.on(player, 'loadedmetadata', this.init);
+        // this.on(player, 'loadedmetadata', this.init);
         this.log('VR init');
       }
 
@@ -526,12 +526,14 @@ gl_FragColor = texture2D(mapped, eUv);
       }
 
       handleVrDisplayActivate_() {
-        if (!this.xrSupported || !browser.IS_IOS)
+        if (!this.xrSupported || !browser.IS_IOS) {
           return;
+        }
 
-        var self = this;
-        var sessionInit = { optionalFeatures: ['local-floor'] };
-        navigator.xr.requestSession('immersive-vr', sessionInit).then(function (session) {
+        const self = this;
+        const sessionInit = { optionalFeatures: ['local-floor'] };
+
+        navigator.xr.requestSession('immersive-vr', sessionInit).then(function(session) {
           self.renderer.xr.setSession(session);
           session.addEventListener('end', self.onXRSessionEnd_);
           self.xrActive = true;
@@ -539,7 +541,7 @@ gl_FragColor = texture2D(mapped, eUv);
           session.requestReferenceSpace('local')
             .then((referenceSpace) => {
               self.xrReferenceSpace = referenceSpace;
-            })
+            });
           self.controls3d.disable();
           self.animationFrameId_ = self.requestAnimationFrame(self.animate_);
 
@@ -548,7 +550,7 @@ gl_FragColor = texture2D(mapped, eUv);
           // to tell that the back arrow button is pressed during cardboard vr.
           // but somewhere along the line these events are silenced with preventDefault
           // but only on iOS, so we translate them ourselves here
-          /*let touches = [];
+          /* let touches = [];
           const iosCardboardTouchStart_ = (e) => {
             for (let i = 0; i < e.touches.length; i++) {
               touches.push(e.touches[i]);
@@ -605,7 +607,7 @@ gl_FragColor = texture2D(mapped, eUv);
         this.xrActive = false;
         this.controls3d.enable();
         // TOOD: do we need this or is this a VideoJS-only thing?
-        //this.trigger('xrSessionDeactivated');
+        // this.trigger('xrSessionDeactivated');
         this.animationFrameId_ = this.requestAnimationFrame(this.animate_);
       }
 
@@ -616,16 +618,15 @@ gl_FragColor = texture2D(mapped, eUv);
       requestAnimationFrame(fn) {
         if (this.xrActive) {
           return this.currentSession.requestAnimationFrame(fn);
-        } else {
-          if ( this.supportsRaf() ) {
-            return window.requestAnimationFrame(() => {
-              fn();
-            });
-          } else {
-            // TODO: store timeouts and stop them when changing player instance
-            return window.setTimeout(fn, 1000 / 60);
-          }
         }
+        if (this.supportsRaf()) {
+          return window.requestAnimationFrame(() => {
+            fn();
+          });
+        }
+        // TODO: store timeouts and stop them when changing player instance
+        return window.setTimeout(fn, 1000 / 60);
+
       }
 
       cancelAnimationFrame(id) {
@@ -645,7 +646,7 @@ gl_FragColor = texture2D(mapped, eUv);
       }
 
       animate_(xrTimestamp, xrFrame) {
-        if (!this.initialized_ || typeof( this.getVideoEl_() ) === 'undefined') {
+        if (!this.initialized_ || typeof (this.getVideoEl_()) === 'undefined') {
           return;
         }
         if (this.getVideoEl_().readyState === this.getVideoEl_().HAVE_ENOUGH_DATA) {
@@ -654,8 +655,9 @@ gl_FragColor = texture2D(mapped, eUv);
           }
         }
 
-        if (!this.xrActive)
+        if (!this.xrActive) {
           this.controls3d.update();
+        }
 
         if (this.omniController) {
           this.omniController.update(this.camera);
@@ -664,7 +666,7 @@ gl_FragColor = texture2D(mapped, eUv);
         if (this.xrActive && xrFrame) {
           this.xrPose = xrFrame.getViewerPose(this.xrReferenceSpace);
           // TOOD: do we need this or is this a VideoJS-only thing?
-          //this.trigger('xrCameraUpdate');
+          // this.trigger('xrCameraUpdate');
         }
 
         if (window.navigator.getGamepads) {
@@ -692,7 +694,7 @@ gl_FragColor = texture2D(mapped, eUv);
         // TODO: if the gamepads code doesn't work, this is from the WebVR to WebXR migration code
         //       however, I've got no idea what xrReferenceSpace should point to here...
         // Loop through all input sources.
-        /*for (let inputSource of xrSession.inputSources) {
+        /* for (let inputSource of xrSession.inputSources) {
           // Show the input source if it has a grip space
           if (inputSource.gripSpace) {
             let inputPose = frame.getPose(inputSource.gripSpace, xrReferenceSpace);
@@ -705,7 +707,7 @@ gl_FragColor = texture2D(mapped, eUv);
         this.renderer.render(this.scene, this.camera);
       }
 
-      applyResize_( camera ) {
+      applyResize_(camera) {
         const width = $fp_player.width();
         const height = $fp_player.height();
 
@@ -716,25 +718,26 @@ gl_FragColor = texture2D(mapped, eUv);
       checkIOSorientation() {
         // if we're on iOS and in VR, check whether to show/hide
         // message about VR not working in portrait mode
-        if ( browser.IS_IOS && root.find('.fv-fp-cardboard').hasClass('active') ) {
-          let
-            $hidden_msg_div = root.find('.fp-vr-ios-msg'),
-            $fp_ui = root.find('.fp-ui');
-          if ( $hidden_msg_div.length ) {
-            if ( window.innerHeight > window.innerWidth ) {
-              root.data( 'vr' ).renderedCanvas.style.display = 'none';
+        if (browser.IS_IOS && root.find('.fv-fp-cardboard').hasClass('active')) {
+          const
+            $hidden_msg_div = root.find('.fp-vr-ios-msg');
+          const $fp_ui = root.find('.fp-ui');
+
+          if ($hidden_msg_div.length) {
+            if (window.innerHeight > window.innerWidth) {
+              root.data('vr').renderedCanvas.style.display = 'none';
               $hidden_msg_div.show();
 
               // make the UI appear above the message
-              $fp_ui.data( 'fv_player_vr_old_index', $fp_ui.css( 'z-index' ) );
-              $fp_ui.css( 'z-index', 1001);
+              $fp_ui.data('fv_player_vr_old_index', $fp_ui.css('z-index'));
+              $fp_ui.css('z-index', 1001);
             } else {
-              root.data( 'vr' ).renderedCanvas.style.display = 'block';
+              root.data('vr').renderedCanvas.style.display = 'block';
               $hidden_msg_div.hide();
 
               // return the UI z-index to its original state
-              if ( $fp_ui.data('fv_player_vr_old_index') ) {
-                $fp_ui.css( 'z-index', $fp_ui.data('fv_player_vr_old_index') );
+              if ($fp_ui.data('fv_player_vr_old_index')) {
+                $fp_ui.css('z-index', $fp_ui.data('fv_player_vr_old_index'));
                 $fp_ui.removeData('fv_player_vr_old_index');
               }
             }
@@ -743,22 +746,22 @@ gl_FragColor = texture2D(mapped, eUv);
       }
 
       handleResize_() {
-        let
-          applyResizeLocal = this.applyResize_,
-          checkISOorientationLocal = this.checkIOSorientation,
-          camLocal = this.camera;
+        const
+          applyResizeLocal = this.applyResize_;
+        const checkISOorientationLocal = this.checkIOSorientation;
+        const camLocal = this.camera;
 
-        applyResizeLocal( camLocal );
+        applyResizeLocal(camLocal);
 
         // iOS does not recalculate player width and height on fullscreen resize (device orientation change),
         // so we need to give it 200ms time to cope and adjust the projection matrix accordingly
         setTimeout(function() {
-          applyResizeLocal( camLocal );
+          applyResizeLocal(camLocal);
           checkISOorientationLocal();
 
           // we need to double-check whether we're in VR or not,
           // since when exitting fullscreen might not trigger fullscreen-exit nor vrdisplaydeactivate events
-          if ( root.data('vr') && root.data('vr').vrDisplay && !root.data('vr').vrDisplay.isPresenting ) {
+          if (root.data('vr') && root.data('vr').vrDisplay && !root.data('vr').vrDisplay.isPresenting) {
             // remove active flag from the VR button
             root.find('.fv-fp-cardboard').removeClass('active');
           }
@@ -808,13 +811,13 @@ gl_FragColor = texture2D(mapped, eUv);
         }
 
         // cardboard forced to on
-        if (this.options_.forceCardboard ) {
+        if (this.options_.forceCardboard) {
           this.addCardboardButton_();
         }
 
         // if ios remove full screen toggle
         // TODO: convert to flowplayer
-        /*if (browser.IS_IOS && this.player_.controlBar && this.player_.controlBar.fullscreenToggle) {
+        /* if (browser.IS_IOS && this.player_.controlBar && this.player_.controlBar.fullscreenToggle) {
           this.player_.controlBar.fullscreenToggle.hide();
         }*/
 
@@ -846,7 +849,7 @@ gl_FragColor = texture2D(mapped, eUv);
         this.renderer.setSize($fp_player.width(), $fp_player.height(), false);
 
         // end an old WebXR session
-        if ( this.currentSession ) {
+        if (this.currentSession) {
           this.currentSession.end();
         }
 
@@ -861,7 +864,7 @@ gl_FragColor = texture2D(mapped, eUv);
 
         videoElement = root.find('video');
 
-        if ( !videoElement.length ) {
+        if (!videoElement.length) {
           this.triggerError_({code: 'web-xr-video-not-found', dismiss: false});
           throw new Error('web-xr-video-not-found');
         }
@@ -870,7 +873,7 @@ gl_FragColor = texture2D(mapped, eUv);
         // We should not be using video element inline styles on video as
         // FV Player DRM won't allow that in Firefox to avoid PiP
         videoElement.after(this.renderedCanvas);
-        /*videoElStyle.zIndex = '-1';
+        /* videoElStyle.zIndex = '-1';
         videoElStyle.opacity = '0';*/
 
         this.xrActive = false;
@@ -879,7 +882,7 @@ gl_FragColor = texture2D(mapped, eUv);
         // also need the cardboard button to enter fully immersive mode
         // so, we want to add the button if we're not polyfilled.
         // TODO: do w need this for WebXR?
-        /*if (!this.vrDisplay.isPolyfilled) {
+        /* if (!this.vrDisplay.isPolyfilled) {
           this.log('Real HMD found using VRControls', this.vrDisplay);
           this.addCardboardButton_();
 
@@ -907,14 +910,15 @@ gl_FragColor = texture2D(mapped, eUv);
         }
 
         if (window.navigator.xr) {
-          //this.renderer.xr.enabled = true;
+          // this.renderer.xr.enabled = true;
           // this.renderer.xr.setReferenceSpaceType('local');
-          var self = this;
-          navigator.xr.isSessionSupported('immersive-vr').then(function (supported) {
+          const self = this;
+
+          navigator.xr.isSessionSupported('immersive-vr').then(function(supported) {
             self.xrSupported = supported;
             if (supported) {
               if (browser.IS_ANDROID || browser.IS_IOS) {
-                this.addCardboardButton_();
+                self.addCardboardButton_();
               }
               console.log('webxr session supported');
             } else {
@@ -949,7 +953,8 @@ gl_FragColor = texture2D(mapped, eUv);
         api.on('fullscreen-exit', this.handleVrDisplayDeactivate_);
         // Hotfix for iPhone, make sure the canvas is not too big after leaving fullscreen
         // The Three JS code seems to set 100vh and 100 vw for it, but then there is nothing to remove that
-        let that = this;
+        const that = this;
+
         api.on('fullscreen-exit', function() {
           that.renderedCanvas.setAttribute('style', 'width: 100%; height: 100%; position: absolute; top:0;');
 
@@ -969,11 +974,11 @@ gl_FragColor = texture2D(mapped, eUv);
 
       addCardboardButton_() {
         jQuery('<strong class="fv-fp-cardboard">VR</strong>')
-          .insertAfter(root.find('.fp-controls .fp-volume')).click(function () {
-            let $e = jQuery(this);
+          .insertAfter(root.find('.fp-controls .fp-volume')).click(function() {
+            const $e = jQuery(this);
 
-            if ( !$e.hasClass('active') ) {
-              if ( api.ready && !api.playing ) {
+            if (!$e.hasClass('active')) {
+              if (api.ready && !api.playing) {
                 api.play();
               }
               window.dispatchEvent(new window.Event('vrdisplayactivate'));
@@ -988,9 +993,9 @@ gl_FragColor = texture2D(mapped, eUv);
       getVideoEl_() {
         // try to find and cache the video element if on page,
         // reset to NULL if not found yet (i.e. player not yet in "ready" state)
-        if ( this.video_element === null ) {
+        if (this.video_element === null) {
           this.video_element = root.find('video:first')[0];
-          if ( typeof(this.video_element) === 'undefined' ) {
+          if (typeof (this.video_element) === 'undefined') {
             this.video_element = null;
           }
         }
@@ -1019,7 +1024,7 @@ gl_FragColor = texture2D(mapped, eUv);
           this.canvasPlayerControls = null;
         }
 
-        if ( this.currentSession ) {
+        if (this.currentSession) {
           this.currentSession.removeEventListener('end', this.onXRSessionEnd_, true);
         }
 
@@ -1035,7 +1040,7 @@ gl_FragColor = texture2D(mapped, eUv);
         // show the fullscreen again
         if (browser.IS_IOS/* && this.player_.controlBar && this.player_.controlBar.fullscreenToggle*/) {
           // TODO: convert for flowplayer
-          //this.player_.controlBar.fullscreenToggle.show();
+          // this.player_.controlBar.fullscreenToggle.show();
         }
 
         // reset the video element style so that it will be displayed
@@ -1076,53 +1081,54 @@ gl_FragColor = texture2D(mapped, eUv);
     VR.prototype.setTimeout = window.setTimeout;
     VR.prototype.clearTimeout = window.clearTimeout;
 
-//VR.VERSION = VERSION;
+    // VR.VERSION = VERSION;
 
-    api.on('ready', function () {
-      if( api.video.vr && not_supported() ) {
-        fv_player_notice(root,"Your device does not support VR.",2000);
+    api.on('ready', function() {
+      if (api.video.vr && not_supported()) {
+        fv_player_notice(root, 'Your device does not support VR.', 2000);
         return;
       }
 
       root.toggleClass('is-vr', api.video.vr);
 
       if (api.video.vr) {
-        let
-          vr_data = api.video.vrvideo,
-          vr_object = new VR(root, {
-            'projection': (vr_data.projection ? vr_data.projection : '360'),
-            'sphereDetail' : 128,
-            'debug' : true
-          });
+        const
+          vr_data = api.video.vrvideo;
+        const vr_object = new VR(root, {
+          projection: (vr_data.projection ? vr_data.projection : '360'),
+          sphereDetail: 128,
+          debug: true
+        });
 
-        root.data( 'vr', vr_object );
+        root.data('vr', vr_object);
         vr_object.init();
 
         // if we're on iOS, we need to add a hidden message that will be displayed
         // instead of canvas when in portrait mode, since that mode screws VR output dimensions
-        if ( browser.IS_IOS ) {
+        if (browser.IS_IOS) {
           // add hidden message DIV
-          let $hidden_msg_div = jQuery('<div class="fp-vr-ios-msg">While in VR, please make sure to use landscape phone rotation.</div>');
+          const $hidden_msg_div = jQuery('<div class="fp-vr-ios-msg">While in VR, please make sure to use landscape phone rotation.</div>');
+
           $hidden_msg_div.css({
-            width: '100%',
-            height: '100%',
-            position: 'absolute',
+            'width': '100%',
+            'height': '100%',
+            'position': 'absolute',
             'background-color': 'black',
-            display: 'none',
+            'display': 'none',
             'padding-top': '20%',
             'z-index': 1000,
             'text-align': 'center',
-            color: 'white',
+            'color': 'white'
           });
 
-          root.prepend( $hidden_msg_div );
+          root.prepend($hidden_msg_div);
           vr_object.checkIOSorientation();
         }
       }
     });
 
     jQuery(document).one('click', '.fp-ui', function() {
-      if ( browser.IS_IOS && ( ( typeof( api.conf.clip ) != 'undefined' && api.conf.clip.vr ) || ( typeof( api.conf.playlist[0] ) != 'undefined' && api.conf.playlist[0].vr ) ) ) {
+      if (browser.IS_IOS && ((typeof (api.conf.clip) !== 'undefined' && api.conf.clip.vr) || (typeof (api.conf.playlist[0]) !== 'undefined' && api.conf.playlist[0].vr))) {
         try {
           DeviceMotionEvent.requestPermission().then(response => {
             if (response == 'granted') {
@@ -1138,60 +1144,62 @@ gl_FragColor = texture2D(mapped, eUv);
     // The video must be allowed to use CORS headers
     // Also, without this HLS won't play on iPhone
     function create_video_tag_with_cors() {
-      let
+      const
         video_tag_properties = {
-          className: "fp-engine",
-          crossOrigin: "anonymous",
-          'x-webkit-airplay': "allow",
-          preload: api.splash ? 'none' : true,
-          autoplay: api.splash ? 'autoplay' : false,
+          'className': 'fp-engine',
+          'crossOrigin': 'anonymous',
+          'x-webkit-airplay': 'allow',
+          'preload': api.splash ? 'none' : true,
+          'autoplay': api.splash ? 'autoplay' : false,
           'webkit-playsinline': true,
           'playsinline': true
         };
 
-      if ( !isVRVideo() ) {
-        delete video_tag_properties['crossOrigin'];
+      if (!isVRVideo()) {
+        delete video_tag_properties.crossOrigin;
       }
 
       if (videoElement.length == 0) {
-        let video_el = flowplayer.common.createElement("video", video_tag_properties);
-        flowplayer.common.prepend(flowplayer.common.find(".fp-player", root)[0], video_el);
-        videoElement = flowplayer.common.find("video", root);
+        const video_el = flowplayer.common.createElement('video', video_tag_properties);
+
+        flowplayer.common.prepend(flowplayer.common.find('.fp-player', root)[0], video_el);
+        videoElement = flowplayer.common.find('video', root);
       }
     }
 
     // This is something to do with iOS - we need to force user of native subtitles
     // otherwise the CORS won't be accepted - or something like that.
     function video_tag_cors_and_subtitles_disabled_for_load() {
-      if (videoElement.length == 0 ) return;
-
-      if ( isVRVideo() ) {
-        videoElement[0].setAttribute("crossorigin", "anonymous");
+      if (videoElement.length == 0) {
+        return;
       }
 
-      api.on("load", function() {
+      if (isVRVideo()) {
+        videoElement[0].setAttribute('crossorigin', 'anonymous');
+      }
+
+      api.on('load', function() {
         have_native_subtitles_conf = Boolean(api.conf.nativesubtitles);
         have_subtitles_support = Boolean(flowplayer.support.subtitles);
         api.conf.nativesubtitles = true;
         flowplayer.support.subtitles = false;
-      }).on("ready", function() {
+      }).on('ready', function() {
         api.conf.nativesubtitles = have_native_subtitles_conf;
         flowplayer.support.subtitles = have_subtitles_support;
       });
     }
 
-    if( !not_supported() ) {
+    if (!not_supported()) {
       create_video_tag_with_cors();
       video_tag_cors_and_subtitles_disabled_for_load();
     }
 
-
     // TODO: It could work with a MP4 video, but not HLS
     function not_supported() {
       // Detect iOS < 14
-      return flowplayer.support.iOS && parseInt(flowplayer.support.iOS.version) < 14
+      return flowplayer.support.iOS && parseInt(flowplayer.support.iOS.version) < 14;
     }
   });
 }
 
-//export default VR;
+// export default VR;
