@@ -589,7 +589,9 @@ gl_FragColor = texture2D(mapped, eUv);
       }
 
       handleVrDisplayDeactivate_() {
-        this.currentSession.end();
+        if ( this.currentSession ) {
+          this.currentSession.end();
+        }
 
         if (this.iosRevertTouchToClick_) {
           this.iosRevertTouchToClick_();
