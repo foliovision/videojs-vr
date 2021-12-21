@@ -9,7 +9,6 @@ import * as utils from './utils';
 import * as browser from './browser';
 import CanvasPlayerControls from './canvas-player-controls';
 import OmnitoneController from './omnitone-controller';
-import {BoxGeometry, BufferGeometry, SphereGeometry} from "../../old/three.module";
 
 const errors = {
   'web-xr-not-supported': {
@@ -125,7 +124,7 @@ if (typeof (flowplayer) !== 'undefined') {
           this.scene.add(this.movieScreen);
         } else if (projection === '360_LR' || projection === '360_TB') {
           // Left eye view
-          let geometry = new SphereGeometry(
+          let geometry = new THREE.SphereGeometry(
             256,
             this.options_.sphereDetail,
             this.options_.sphereDetail
@@ -144,7 +143,7 @@ if (typeof (flowplayer) !== 'undefined') {
             }
           }
 
-          this.movieGeometry = new BufferGeometry().fromGeometry(geometry);
+          this.movieGeometry = new THREE.BufferGeometry().fromGeometry(geometry);
           this.movieMaterial = new THREE.MeshBasicMaterial({
             map: this.videoTexture,
             overdraw: true,
@@ -159,7 +158,7 @@ if (typeof (flowplayer) !== 'undefined') {
           this.scene.add(this.movieScreen);
 
           // Right eye view
-          geometry = new SphereGeometry(
+          geometry = new THREE.SphereGeometry(
             256,
             this.options_.sphereDetail,
             this.options_.sphereDetail
@@ -178,7 +177,7 @@ if (typeof (flowplayer) !== 'undefined') {
             }
           }
 
-          this.movieGeometry = new BufferGeometry().fromGeometry(geometry);
+          this.movieGeometry = new THREE.BufferGeometry().fromGeometry(geometry);
           this.movieMaterial = new THREE.MeshBasicMaterial({
             map: this.videoTexture,
             overdraw: true,
@@ -192,7 +191,7 @@ if (typeof (flowplayer) !== 'undefined') {
           this.movieScreen.layers.set(2);
           this.scene.add(this.movieScreen);
         } else if (projection === '360_CUBE') {
-          this.movieGeometry = new BoxGeometry(256, 256, 256);
+          this.movieGeometry = new THREE.BoxGeometry(256, 256, 256);
           this.movieMaterial = new THREE.MeshBasicMaterial({
             map: this.videoTexture,
             overdraw: true,
@@ -232,7 +231,7 @@ if (typeof (flowplayer) !== 'undefined') {
 
           this.scene.add(this.movieScreen);
         } else if (projection === '180' || projection === '180_LR' || projection === '180_MONO') {
-          let geometry = new SphereGeometry(
+          let geometry = new THREE.SphereGeometry(
             256,
             this.options_.sphereDetail,
             this.options_.sphereDetail,
@@ -252,7 +251,7 @@ if (typeof (flowplayer) !== 'undefined') {
             }
           }
 
-          this.movieGeometry = new BufferGeometry().fromGeometry(geometry);
+          this.movieGeometry = new THREE.BufferGeometry().fromGeometry(geometry);
           this.movieMaterial = new THREE.MeshBasicMaterial({
             map: this.videoTexture,
             overdraw: true
@@ -264,7 +263,7 @@ if (typeof (flowplayer) !== 'undefined') {
 
           if (projection !== '180_MONO') {
             // Right eye view
-            geometry = new SphereGeometry(
+            geometry = new THREE.SphereGeometry(
               256,
               this.options_.sphereDetail,
               this.options_.sphereDetail,
@@ -281,7 +280,7 @@ if (typeof (flowplayer) !== 'undefined') {
               }
             }
 
-            this.movieGeometry = new BufferGeometry().fromGeometry(geometry);
+            this.movieGeometry = new THREE.BufferGeometry().fromGeometry(geometry);
             this.movieMaterial = new THREE.MeshBasicMaterial({
               map: this.videoTexture,
               overdraw: true
@@ -297,7 +296,7 @@ if (typeof (flowplayer) !== 'undefined') {
             // we truncate the 2-pixel-wide strips on all discontinuous edges,
             const contCorrect = 2;
 
-            this.movieGeometry = new BoxGeometry(256, 256, 256);
+            this.movieGeometry = new THREE.BoxGeometry(256, 256, 256);
             this.movieMaterial = new THREE.ShaderMaterial({
               overdraw: true, side: THREE.BackSide,
               uniforms: {
@@ -426,7 +425,7 @@ gl_FragColor = texture2D(mapped, eUv);
           }
         } else if (projection === 'FISHEYE') {
 
-          this.movieGeometry = new SphereGeometry(
+          this.movieGeometry = new THREE.SphereGeometry(
             256, // radius - sphere´s radius
             48, // widthSegments - number of horizontal segments
             48, // heightSegments - number of vertical segments
