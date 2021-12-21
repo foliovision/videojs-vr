@@ -231,7 +231,7 @@ if (typeof (flowplayer) !== 'undefined') {
 
           this.scene.add(this.movieScreen);
         } else if (projection === '180' || projection === '180_LR' || projection === '180_MONO') {
-          let geometry = new THREE.SphereGeometry(
+          this.movieGeometry = new THREE.SphereBufferGeometry(
             256,
             this.options_.sphereDetail,
             this.options_.sphereDetail,
@@ -240,18 +240,14 @@ if (typeof (flowplayer) !== 'undefined') {
           );
 
           // Left eye view
-          geometry.scale(-1, 1, 1);
-          let uvs = geometry.faceVertexUvs[0];
-
-          if (projection !== '180_MONO') {
-            for (let i = 0; i < uvs.length; i++) {
-              for (let j = 0; j < 3; j++) {
-                uvs[i][j].x *= 0.5;
-              }
+          this.movieGeometry.scale(-1, 1, 1);
+          for (let i = 0; i < this.movieGeometry.attributes.uv.array.length; i++) {
+            if (i % 2 == 1) {
+              continue;
             }
+            this.movieGeometry.attributes.uv.array[i] *= 0.5;
           }
 
-          this.movieGeometry = new THREE.BufferGeometry().fromGeometry(geometry);
           this.movieMaterial = new THREE.MeshBasicMaterial({
             map: this.videoTexture,
             overdraw: true
@@ -263,24 +259,22 @@ if (typeof (flowplayer) !== 'undefined') {
 
           if (projection !== '180_MONO') {
             // Right eye view
-            geometry = new THREE.SphereGeometry(
+            this.movieGeometry = new THREE.SphereBufferGeometry(
               256,
               this.options_.sphereDetail,
               this.options_.sphereDetail,
               Math.PI,
               Math.PI
             );
-            geometry.scale(-1, 1, 1);
-            uvs = geometry.faceVertexUvs[0];
-
-            for (let i = 0; i < uvs.length; i++) {
-              for (let j = 0; j < 3; j++) {
-                uvs[i][j].x *= 0.5;
-                uvs[i][j].x += 0.5;
+            this.movieGeometry.scale(-1, 1, 1);
+            for (let i = 0; i < this.movieGeometry.attributes.uv.array.length; i++) {
+              if (i % 2 == 1) {
+                continue;
               }
+              this.movieGeometry.attributes.uv.array[i] *= 0.5;
+              this.movieGeometry.attributes.uv.array[i] += 0.5;
             }
 
-            this.movieGeometry = new THREE.BufferGeometry().fromGeometry(geometry);
             this.movieMaterial = new THREE.MeshBasicMaterial({
               map: this.videoTexture,
               overdraw: true
@@ -588,7 +582,7 @@ gl_FragColor = texture2D(mapped, eUv);
       }
 
       handleVrDisplayDeactivate_() {
-        if ( this.currentSession ) {
+        if (this.currentSession) {
           this.currentSession.end();
         }
 
